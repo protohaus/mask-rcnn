@@ -63,7 +63,8 @@ class LeafsConfig(Config):
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
-    IMAGES_PER_GPU = 4
+    # A kaggle GPU should have 24GB of memory.
+    IMAGES_PER_GPU = 1
 
     # Uncomment to train on 8 GPUs (default is 1)
     # GPU_COUNT = 8
@@ -197,12 +198,12 @@ def train(model):
     """Train the model."""
     # Training dataset.
     dataset_train = LeafsDataset()
-    dataset_train.load_balloon(args.dataset, "train")
+    dataset_train.load_leafs(args.dataset, "train")
     dataset_train.prepare()
 
     # Validation dataset
     dataset_val = LeafsDataset()
-    dataset_val.load_balloon(args.dataset, "val")
+    dataset_val.load_leafs(args.dataset, "val")
     dataset_val.prepare()
 
     # *** This training schedule is an example. Update to your needs ***
