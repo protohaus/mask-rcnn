@@ -896,7 +896,9 @@ def resize(image, output_shape, order=1, mode='constant', cval=0, clip=True,
     """
 
     return_type = image.dtype
-    imgf = img_as_float(image)
+    imgf = image
+    if image.dtype == bool:
+        imgf = img_as_float(image)
 
     if LooseVersion(skimage.__version__) >= LooseVersion("0.14"):
         # New in 0.14: anti_aliasing. Default it to False for backward

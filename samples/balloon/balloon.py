@@ -161,6 +161,11 @@ class BalloonDataset(utils.Dataset):
         for i, p in enumerate(info["polygons"]):
             # Get indexes of pixels inside the polygon and set them to 1
             rr, cc = skimage.draw.polygon(p['all_points_y'], p['all_points_x'])
+
+            #fixes index out of bounds as described by https://github.com/matterport/Mask_RCNN/issues/636
+            rr[rr > mask.shape[0]-1] = mask.shape[0]-1
+            cc[cc > mask.shape[1]-1] = mask.shape[1]-1
+
             mask[rr, cc, i] = 1
 
         # Return mask, and array of class IDs of each instance. Since we have
