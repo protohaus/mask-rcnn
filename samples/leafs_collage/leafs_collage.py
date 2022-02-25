@@ -145,7 +145,7 @@ class LeafsCollageDataset(utils.Dataset):
         new_unique_rgbs = np.delete(unique_rgbs, 0 ,0)
 
         mask = np.zeros([info["height"], info["width"], len(new_unique_rgbs)],
-                        dtype=np.uint8)
+                        dtype=np.bool)
         for i, color in enumerate(new_unique_rgbs):
             new_mask = mask[:,:,i]
             new_mask[np.where((leaf_collage_masks==color).all(axis=2))] = 1
