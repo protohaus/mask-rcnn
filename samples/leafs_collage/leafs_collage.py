@@ -78,6 +78,26 @@ class LeafsCollageConfig(Config):
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
 
+    # How many anchors per image to use for RPN training
+    RPN_TRAIN_ANCHORS_PER_IMAGE = 512
+
+    # Number of ROIs per image to feed to classifier/mask heads
+    # The Mask RCNN paper uses 512 but often the RPN doesn't generate
+    # enough positive proposals to fill this and keep a positive:negative
+    # ratio of 1:3. You can increase the number of proposals by adjusting
+    # the RPN NMS threshold.
+    TRAIN_ROIS_PER_IMAGE = 512
+
+    # Non-max suppression threshold to filter RPN proposals.
+    # You can increase this during training to generate more propsals.
+    RPN_NMS_THRESHOLD = 0.8
+
+    # Maximum number of ground truth instances to use in one image
+    MAX_GT_INSTANCES = 200
+
+    # Max number of final detections
+    DETECTION_MAX_INSTANCES = 200
+
 
 ############################################################
 #  Dataset
@@ -190,7 +210,7 @@ def train(model):
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
                 epochs=100,
-                layers='heads')
+                layers='5+')
 
 
 def color_splash(image, mask):
