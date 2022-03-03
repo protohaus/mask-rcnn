@@ -61,6 +61,8 @@ class LeafsCollageConfig(Config):
     # Give the configuration a recognizable name
     NAME = "leafsCollage"
 
+    BACKBONE = "resnet101"
+
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
     # A kaggle GPU should have 24GB of memory.
@@ -76,7 +78,7 @@ class LeafsCollageConfig(Config):
     STEPS_PER_EPOCH = 100
 
     # Skip detections with < 90% confidence
-    DETECTION_MIN_CONFIDENCE = 0.9
+    DETECTION_MIN_CONFIDENCE = 0.8
 
     # How many anchors per image to use for RPN training
     RPN_TRAIN_ANCHORS_PER_IMAGE = 512
@@ -86,17 +88,21 @@ class LeafsCollageConfig(Config):
     # enough positive proposals to fill this and keep a positive:negative
     # ratio of 1:3. You can increase the number of proposals by adjusting
     # the RPN NMS threshold.
-    TRAIN_ROIS_PER_IMAGE = 512
+    #TRAIN_ROIS_PER_IMAGE = 200
 
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more propsals.
     RPN_NMS_THRESHOLD = 0.8
 
     # Maximum number of ground truth instances to use in one image
-    MAX_GT_INSTANCES = 200
+    #MAX_GT_INSTANCES = 200
 
     # Max number of final detections
-    DETECTION_MAX_INSTANCES = 200
+    #DETECTION_MAX_INSTANCES = 200
+
+    IMAGE_RESIZE_MODE = "crop"
+    IMAGE_MIN_DIM = 512
+    IMAGE_MAX_DIM = 512
 
 
 ############################################################
@@ -121,9 +127,11 @@ class LeafsCollageDataset(utils.Dataset):
 
         for image in os.listdir(dataset_dir):
             #print(image)
-            if image.lower().endswith('.png'):
+            if image.lower().endswith('.jpg'):
                 image_path = os.path.join(dataset_dir,image)
-                collage_path = os.path.join(collage_dir,image)
+                collage_file, ext = os.path.splitext(image)
+                collage_file = collage_file + '.png'
+                collage_path = os.path.join(collage_dir,collage_file)
                 if os.path.isfile(collage_path):
                     mask_collage = skimage.io.imread(collage_path)
                     image_collage = skimage.io.imread(image_path)
@@ -159,16 +167,19 @@ class LeafsCollageDataset(utils.Dataset):
 
         leaf_collage_masks = info["mask_collage"]
 
-        all_rgb_codes = leaf_collage_masks.reshape(-1, leaf_collage_masks.shape[-1])
-        unique_rgbs = np.unique(all_rgb_codes, axis=0)
+        #all_rgb_codes = leaf_collage_masks.reshape(-1, leaf_collage_masks.shape[-1])
+        #unique_rgbs = np.unique(all_rgb_codes, axis=0)
         # remove black          
-        new_unique_rgbs = np.delete(unique_rgbs, 0 ,0)
+        #new_unique_rgbs = np.delete(unique_rgbs, 0 ,0)
+        all_grayscales = leaf_collage_masks.flatten()
+        unique_grays = np.unique(all_grayscales, axis=0)
+        new_unique_grays = np.delete(unique_grays, 0)
 
-        mask = np.zeros([info["height"], info["width"], len(new_unique_rgbs)],
+        mask = np.zeros([info["height"], info["width"], len(new_unique_grays)],
                         dtype=np.bool)
-        for i, color in enumerate(new_unique_rgbs):
+        for i, color in enumerate(new_unique_grays):
             new_mask = mask[:,:,i]
-            new_mask[np.where((leaf_collage_masks==color).all(axis=2))] = 1
+            new_mask[np.where(leaf_collage_masks==color)] = 1
             mask[:,:,i] = new_mask
             #fixes index out of bounds as described by https://github.com/matterport/Mask_RCNN/issues/636
             #rr[rr > mask.shape[0]-1] = mask.shape[0]-1
