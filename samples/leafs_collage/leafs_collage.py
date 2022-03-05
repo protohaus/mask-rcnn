@@ -77,11 +77,16 @@ class LeafsCollageConfig(Config):
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 100
 
+    # Number of validation steps to run at the end of every training epoch.
+    # A bigger number improves accuracy of validation stats, but slows
+    # down the training.
+    VALIDATION_STEPS = 50
+
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
 
     # How many anchors per image to use for RPN training
-    RPN_TRAIN_ANCHORS_PER_IMAGE = 200
+    RPN_TRAIN_ANCHORS_PER_IMAGE = 256
 
     # Number of ROIs per image to feed to classifier/mask heads
     # The Mask RCNN paper uses 512 but often the RPN doesn't generate
@@ -90,25 +95,30 @@ class LeafsCollageConfig(Config):
     # the RPN NMS threshold.
     #TRAIN_ROIS_PER_IMAGE = 200
 
+    # If enabled, resizes instance masks to a smaller size to reduce
+    # memory load. Recommended when using high-resolution images.
+    USE_MINI_MASK = False
+    MINI_MASK_SHAPE = (128, 128)  # (height, width) of the mini-mask
+
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more propsals.
     RPN_NMS_THRESHOLD = 0.8
 
     # Maximum number of ground truth instances to use in one image
-    #MAX_GT_INSTANCES = 200
+    MAX_GT_INSTANCES = 200
 
     # Max number of final detections
-    #DETECTION_MAX_INSTANCES = 200
+    DETECTION_MAX_INSTANCES = 200
 
-    IMAGE_RESIZE_MODE = "crop"
-    IMAGE_MIN_DIM = 512
-    IMAGE_MAX_DIM = 512
+    #IMAGE_RESIZE_MODE = "crop"
+    #IMAGE_MIN_DIM = 512
+    #IMAGE_MAX_DIM = 512
 
-        # Learning rate and momentum
+    # Learning rate and momentum
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
     # weights to explode. Likely due to differences in optimizer
     # implementation.
-    LEARNING_RATE = 0.001
+    LEARNING_RATE = 0.005
     LEARNING_MOMENTUM = 0.9
 
     # Weight decay regularization
