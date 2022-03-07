@@ -66,7 +66,7 @@ class LeafsCollageConfig(Config):
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
     # A kaggle GPU should have 24GB of memory.
-    IMAGES_PER_GPU = 2
+    IMAGES_PER_GPU = 1
 
     # Uncomment to train on 8 GPUs (default is 1)
     # GPU_COUNT = 8
@@ -110,9 +110,9 @@ class LeafsCollageConfig(Config):
     # Max number of final detections
     DETECTION_MAX_INSTANCES = 200
 
-    #IMAGE_RESIZE_MODE = "crop"
-    #IMAGE_MIN_DIM = 512
-    #IMAGE_MAX_DIM = 512
+    IMAGE_RESIZE_MODE = "crop"
+    IMAGE_MIN_DIM = 512
+    IMAGE_MAX_DIM = 512
 
     # Learning rate and momentum
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
