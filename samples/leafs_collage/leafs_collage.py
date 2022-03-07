@@ -66,7 +66,7 @@ class LeafsCollageConfig(Config):
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
     # A kaggle GPU should have 24GB of memory.
-    IMAGES_PER_GPU = 1
+    IMAGES_PER_GPU = 2
 
     # Uncomment to train on 8 GPUs (default is 1)
     # GPU_COUNT = 8
