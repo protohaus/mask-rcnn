@@ -110,9 +110,9 @@ class LeafsCollageConfig(Config):
     # Max number of final detections
     DETECTION_MAX_INSTANCES = 200
 
-    IMAGE_RESIZE_MODE = "crop"
-    IMAGE_MIN_DIM = 512
-    IMAGE_MAX_DIM = 512
+    #IMAGE_RESIZE_MODE = "crop"
+    #IMAGE_MIN_DIM = 512
+    #IMAGE_MAX_DIM = 512
 
     # Learning rate and momentum
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
@@ -153,26 +153,53 @@ class LeafsCollageDataset(utils.Dataset):
         assert subset in ["train", "val"]
         dataset_dir = os.path.join(dataset_dir, subset)
 
-        collage_dir = os.path.join(dataset_dir,"collages")
+        # Load annotations
+        # VGG Image Annotator (up to version 1.6) saves each image in the form:
+        # { 'filename': '28503151_5b5b7ec140_b.jpg',
+        #   'regions': {
+        #       '0': {
+        #           'region_attributes': {},
+        #           'shape_attributes': {
+        #               'all_points_x': [...],
+        #               'all_points_y': [...],
+        #               'name': 'polygon'}},
+        #       ... more regions ...
+        #   },
+        #   'size': 100202
+        # }
+        # We mostly care about the x and y coordinates of each region
+        # Note: In VIA 2.0, regions was changed from a dict to a list.
+        annotations = json.load(open(os.path.join(dataset_dir, "via_region_data.json")))
+        annotations = list(annotations.values())  # don't need the dict keys
 
-        for image in os.listdir(dataset_dir):
-            #print(image)
-            if image.lower().endswith('.jpg'):
-                image_path = os.path.join(dataset_dir,image)
-                collage_file, ext = os.path.splitext(image)
-                collage_file = collage_file + '.png'
-                collage_path = os.path.join(collage_dir,collage_file)
-                if os.path.isfile(collage_path):
-                    mask_collage = skimage.io.imread(collage_path)
-                    image_collage = skimage.io.imread(image_path)
-                    height, width = image_collage.shape[:2]
-                    self.add_image(
-                        "leafs",
-                        image_id=image,
-                        path=image_path,
-                        width=width,height=height,
-                        mask_collage=mask_collage
-                    )
+        # The VIA tool saves images in the JSON even if they don't have any
+        # annotations. Skip unannotated images.
+        annotations = [a for a in annotations if a['regions']]
+
+        # Add images
+        for a in annotations:
+            # Get the x, y coordinaets of points of the polygons that make up
+            # the outline of each object instance. These are stores in the
+            # shape_attributes (see json format above)
+            # The if condition is needed to support VIA versions 1.x and 2.x.
+            if type(a['regions']) is dict:
+                polygons = [r['shape_attributes'] for r in a['regions'].values()]
+            else:
+                polygons = [r['shape_attributes'] for r in a['regions']] 
+
+            # load_mask() needs the image size to convert polygons to masks.
+            # Unfortunately, VIA doesn't include it in JSON, so we must read
+            # the image. This is only managable since the dataset is tiny.
+            image_path = os.path.join(dataset_dir, a['filename'])
+            image = skimage.io.imread(image_path)
+            height, width = image.shape[:2]
+
+            self.add_image(
+                "leafs",
+                image_id=a['filename'],  # use file name as a unique image id
+                path=image_path,
+                width=width, height=height,
+                polygons=polygons)
 
     def load_mask(self, image_id):
         """Load instance masks for the given image.
@@ -194,26 +221,17 @@ class LeafsCollageDataset(utils.Dataset):
         # Convert polygons to a bitmap mask of shape
         # [height, width, instance_count]
         info = self.image_info[image_id]
+        mask = np.zeros([info["height"], info["width"], len(info["polygons"])],
+                        dtype=np.uint8)
+        for i, p in enumerate(info["polygons"]):
+            # Get indexes of pixels inside the polygon and set them to 1
+            rr, cc = skimage.draw.polygon(p['all_points_y'], p['all_points_x'])
 
-        leaf_collage_masks = info["mask_collage"]
-
-        #all_rgb_codes = leaf_collage_masks.reshape(-1, leaf_collage_masks.shape[-1])
-        #unique_rgbs = np.unique(all_rgb_codes, axis=0)
-        # remove black          
-        #new_unique_rgbs = np.delete(unique_rgbs, 0 ,0)
-        all_grayscales = leaf_collage_masks.flatten()
-        unique_grays = np.unique(all_grayscales, axis=0)
-        new_unique_grays = np.delete(unique_grays, 0)
-
-        mask = np.zeros([info["height"], info["width"], len(new_unique_grays)],
-                        dtype=np.bool)
-        for i, color in enumerate(new_unique_grays):
-            new_mask = mask[:,:,i]
-            new_mask[np.where(leaf_collage_masks==color)] = 1
-            mask[:,:,i] = new_mask
             #fixes index out of bounds as described by https://github.com/matterport/Mask_RCNN/issues/636
-            #rr[rr > mask.shape[0]-1] = mask.shape[0]-1
-            #cc[cc > mask.shape[1]-1] = mask.shape[1]-1
+            rr[rr > mask.shape[0]-1] = mask.shape[0]-1
+            cc[cc > mask.shape[1]-1] = mask.shape[1]-1
+
+            mask[rr, cc, i] = 1
 
         # Return mask, and array of class IDs of each instance. Since we have
         # one class ID only, we return an array of 1s
