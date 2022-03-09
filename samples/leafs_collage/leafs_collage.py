@@ -98,7 +98,7 @@ class LeafsCollageConfig(Config):
     # If enabled, resizes instance masks to a smaller size to reduce
     # memory load. Recommended when using high-resolution images.
     USE_MINI_MASK = True
-    MINI_MASK_SHAPE = (128, 128)  # (height, width) of the mini-mask
+    MINI_MASK_SHAPE = (56, 56)  # (height, width) of the mini-mask
 
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more propsals.
@@ -110,19 +110,19 @@ class LeafsCollageConfig(Config):
     # Max number of final detections
     DETECTION_MAX_INSTANCES = 200
 
-    #IMAGE_RESIZE_MODE = "crop"
-    #IMAGE_MIN_DIM = 512
-    #IMAGE_MAX_DIM = 512
+    IMAGE_RESIZE_MODE = "crop"
+    IMAGE_MIN_DIM = 1024
+    IMAGE_MAX_DIM = 1024
 
     # Learning rate and momentum
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
     # weights to explode. Likely due to differences in optimizer
     # implementation.
-    LEARNING_RATE = 0.0025
+    LEARNING_RATE = 0.002
     LEARNING_MOMENTUM = 0.9
 
     # Weight decay regularization
-    WEIGHT_DECAY = 0.0001
+    WEIGHT_DECAY = 0.00001
 
     # Loss weights for more precise optimization.
     # Can be used for R-CNN training setup.
@@ -222,7 +222,7 @@ class LeafsCollageDataset(utils.Dataset):
         # [height, width, instance_count]
         info = self.image_info[image_id]
         mask = np.zeros([info["height"], info["width"], len(info["polygons"])],
-                        dtype=np.uint8)
+                        dtype=np.bool)
         for i, p in enumerate(info["polygons"]):
             # Get indexes of pixels inside the polygon and set them to 1
             rr, cc = skimage.draw.polygon(p['all_points_y'], p['all_points_x'])
