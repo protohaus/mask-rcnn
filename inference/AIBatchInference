@@ -1,6 +1,8 @@
-#%%import os
+#%%
+import os
 import sys
 import random
+import json
 import math
 import cv2
 import re
@@ -10,8 +12,9 @@ import tensorflow as tf
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from datetime import datetime
 # Root directory of the project
-ROOT_DIR = os.path.abspath("../")
+ROOT_DIR = os.path.abspath("./")
 print(ROOT_DIR)
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn import utils
@@ -26,7 +29,7 @@ from samples.leafs_collage import leafs_collage
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
 
 # Local path to trained weights file
-LEAFS_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_leafscollage_0041.h5")
+LEAFS_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_leafscollage.h5")
 
 config = leafs_collage.LeafsCollageConfig()
 BATCH_INPUT_DIR = os.path.join(ROOT_DIR, "datasets/leafs_collage")
@@ -39,10 +42,17 @@ DATA_DIR = os.path.join(ROOT_DIR,"inference","data")
 # changes for inferencing.
 # define the test configuration
 class TestConfig(config.__class__):
-     NAME = "test"
-     GPU_COUNT = 1
-     IMAGES_PER_GPU = 1
-     NUM_CLASSES = 1 + 1
+    NAME = "test"
+    GPU_COUNT = 1
+    IMAGES_PER_GPU = 1
+    NUM_CLASSES = 1 + 1
+
+    IMAGE_RESIZE_MODE = "square"
+    IMAGE_MIN_DIM = 800
+    IMAGE_MAX_DIM = 1024
+
+    # Skip detections with < 90% confidence
+    DETECTION_MIN_CONFIDENCE = 0.8
 
 config = TestConfig()
 config.display()
@@ -96,10 +106,12 @@ print("Loading weights ", weights_path)
 model.load_weights(weights_path, by_name=True)
 
 images = []
+filenames = []
 for image in os.listdir(DATA_DIR):
     if image.lower().endswith('.jpg'):
         img = cv2.imread(os.path.join(DATA_DIR,image))
         images.append(img)
+        filenames.append(image)
 
 results = []
 # Run object detection
@@ -115,4 +127,45 @@ visualize.display_instances(images[0], r[0]['rois'], r[0]['masks'], r[0]['class_
                             title="Predictions")
 
 #store results as json
-# %%
+# %% create mask for each leaf.
+annotations = {}
+for i, res in enumerate(results):
+    now = datetime.now()
+
+    # dd/mm/YY H:M:S
+    dt_string = now.strftime("%d%m%Y_%H%M%S")
+    #plt.imshow(bg_image)
+    filename = filenames[i]
+    regions = []
+
+    for j in range(res[0]['masks'].shape[2]):
+        mask = res[0]['masks'][:,:,j]
+        input_mask = mask.astype(np.uint8)
+        contours, hierarchy = cv2.findContours(input_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_TC89_KCOS)
+        for count in contours:
+            epsilon = 0.002 * cv2.arcLength(count, True)
+            approximations = cv2.approxPolyDP(count, epsilon, True)
+            all_points_x = approximations[:,:,0]
+            all_points_y = approximations[:,:,1]
+            reshaped_x = all_points_x.flatten()
+            reshaped_y = all_points_y.flatten()
+            region = {"shape_attributes":{"name":"polygon","all_points_x":reshaped_x.tolist(),"all_points_y":reshaped_y.tolist()},           
+                        "region_attributes": {
+                        "Type": "Leaf",
+                        "State": "healthy",
+                        "Sort": "Genovese",
+                        "Age": "medium"
+                    }}
+            regions.append(region)
+
+    filesize = os.path.getsize(os.path.join(DATA_DIR,filename))
+
+    annotations[filename + str(filesize)] = {"filename":filename,"size":filesize, "regions":regions,"fileattributes":{}}
+
+now = datetime.now()
+
+# dd/mm/YY H:M:S
+dt_string = now.strftime("%d%m%Y_%H%M%S")
+    #plt.imshow(bg_image)
+with open(os.path.join(DATA_DIR,'via_region_data{0}.json'.format(dt_string)), 'w') as f:
+    json.dump(annotations, f)
