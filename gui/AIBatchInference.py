@@ -5,7 +5,6 @@ import random
 import json
 import math
 import cv2
-import re
 import time
 import numpy as np
 import tensorflow as tf
@@ -13,6 +12,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from datetime import datetime
+import scipy
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("./")
@@ -26,6 +26,28 @@ from mrcnn.visualize import display_images
 import mrcnn.model as modellib
 
 from samples.leafs_collage import leafs_collage
+
+# def resize_and_crop(mask,dims):
+#     height, width = mask.shape[:2]
+#     target_height = dims[0]
+#     target_width = dims[1]
+
+#     if target_height > target_width:
+#         scale = target_height / height
+#     else:
+#         scale = target_width / width
+
+#     #scale mask
+#     mask = scipy.ndimage.zoom(mask, zoom=[scale, scale], order=0)
+
+#     new_height, new_width = mask.shape[:2]
+#     y = int((new_height - target_height)/2)
+#     x = int((new_width - target_width)/2)
+
+#     #crop mask
+#     crop_msk = mask[y:y+target_height, x:x+target_width]
+
+#     return crop_msk
 
 class AIBatchInference():
     def __init__(self,MODEL_DIR,LEAFS_MODEL_PATH,BATCH_INPUT_DIR):
@@ -47,8 +69,8 @@ class AIBatchInference():
             # Skip detections with < 90% confidence
             DETECTION_MIN_CONFIDENCE = 0.8
 
-        config = TestConfig()
-        config.display()
+        self.config = TestConfig()
+        self.config.display()
         self.Device = "/cpu:0"
         self.TEST_MODE = "inference"
     def get_ax(rows=1, cols=1, size=16):
@@ -104,6 +126,7 @@ class AIBatchInference():
             for j in range(res[0]['masks'].shape[2]):
                 mask = res[0]['masks'][:,:,j]
                 input_mask = mask.astype(np.uint8)
+                #resized_and_cropped = resize_and_crop(input_mask,dims)
                 contours, hierarchy = cv2.findContours(input_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_TC89_KCOS)
                 for count in contours:
                     epsilon = 0.002 * cv2.arcLength(count, True)
@@ -112,12 +135,15 @@ class AIBatchInference():
                     all_points_y = approximations[:,:,1]
                     reshaped_x = all_points_x.flatten()
                     reshaped_y = all_points_y.flatten()
+                    if len(reshaped_x) < 3:
+                        continue
                     region = {"shape_attributes":{"name":"polygon","all_points_x":reshaped_x.tolist(),"all_points_y":reshaped_y.tolist()},           
                                 "region_attributes": {
                                 "Type": "Leaf",
                                 "State": "healthy",
                                 "Sort": "Genovese",
-                                "Age": "medium"
+                                "Age": "medium",
+                                "leaftinder": "undecided"
                             }}
                     regions.append(region)
 

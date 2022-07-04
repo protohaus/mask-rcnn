@@ -3,6 +3,7 @@ import tkinter.ttk as ttk
 from PIL import ImageTk,Image
 from gui_utilities import *
 import threading
+import skimage
 
 ROOT_DIR = os.path.abspath("./")
 via_url = os.path.join(ROOT_DIR,"gui","via-2.0.11","via.html")
@@ -50,28 +51,211 @@ class PageSegmentation(tk.Frame):
         label.pack(side="top", fill="x", pady=label_pad)
         self.canvas = tk.Canvas(self, width = main_canvas_width, height = main_canvas_height, bg = 'gray')      
         self.canvas.pack()
-        self.image =  Image.open("gui/segmented.png")
+        image =  Image.open("gui/segmented.png")
         maxsize = main_canvas_height
-        self.image = resize_image_height(self.image,maxsize)
-        self.img = ImageTk.PhotoImage(self.image)   
-        self.image_container = self.canvas.create_image((main_canvas_width-self.image.size[0])/2,(main_canvas_height-self.image.size[1])/2, anchor=tk.NW,image=self.img)
-        btn_loadIMage = ttk.Button(master=self,text="Show random image",command=lambda: load_image(self,main_canvas_height,main_canvas_width,path_leafoutput))
+        image = resize_image_height(image,maxsize)
+        self.img = ImageTk.PhotoImage(image)   
+        self.image_container = self.canvas.create_image((main_canvas_width-image.size[0])/2,(main_canvas_height-image.size[1])/2, anchor=tk.NW,image=self.img)
+        btn_loadIMage = ttk.Button(master=self,text="Show random image",command=lambda: show_polygons(self,main_canvas_height,main_canvas_width,path_raw_data,path_segmentfolder))
         btn_loadIMage.pack()
 
 class PageLeafTinder(tk.Frame):
     def __init__(self, parent):
         ttk.Frame.__init__(self, parent)
         label = ttk.Label(self, text="Inspector: This is the leaf tinder page")
-        label.pack(side="top", fill="x", pady=label_pad)
-        self.canvas = tk.Canvas(self, width = main_canvas_width, height = main_canvas_height, bg = 'gray')      
-        self.canvas.pack()
-        self.image =  Image.open("gui/leaf.png")
-        maxsize = main_canvas_height
-        self.image = resize_image_height(self.image,maxsize)
+        #label.pack(side="top", fill="x", pady=label_pad)
+        label.grid(row =0, column=1)
+        self.canvas = tk.Canvas(self, width = main_canvas_width-100, height = main_canvas_height-100, bg = 'gray')      
+        #self.canvas.pack()
+        self.canvas.grid(row =1, column=1)
+        self.img_filename = "gui/leaf.png"
+        self.image =  Image.open(self.img_filename)
+        self.maxsize = main_canvas_height - 100
+        self.image = resize_image_height(self.image,self.maxsize)
         self.img = ImageTk.PhotoImage(self.image)   
-        self.image_container = self.canvas.create_image((main_canvas_width-self.image.size[0])/2,(main_canvas_height-self.image.size[1])/2, anchor=tk.NW,image=self.img)
-        btn_loadIMage = ttk.Button(master=self,text="Show random image",command=lambda: load_image(self,main_canvas_height,main_canvas_width,path_leafoutput))
-        btn_loadIMage.pack()
+        self.image_container = self.canvas.create_image((main_canvas_width-100-self.image.size[0])/2,(main_canvas_height-100-self.image.size[1])/2, anchor=tk.NW,image=self.img)
+        #btn_loadIMage = ttk.Button(master=self,text="Show random image",command=lambda: load_image(self,main_canvas_height,main_canvas_width,path_leafoutput))
+        #btn_loadIMage.pack()
+        self.startButton = ttk.Button(self, text = "Start", command = lambda: self.start_tinder())
+        self.startButton.grid(row=2, column = 0)
+        self.yesButton = ttk.Button(self, text = "Yes", command = lambda: self.process_input(True))
+        self.yesButton.grid(row = 2, column = 1)
+        self.noButton = ttk.Button(self, text = "No", command = lambda: self.process_input(False))
+        self.noButton.grid(row = 3, column = 1)
+        self.saveButton = ttk.Button(self, text = "Save Data", command = self.save_json)
+        self.saveButton.grid(row = 4, column = 0)
+        self.yesButton['state'] = tk.DISABLED
+        self.noButton['state'] = tk.DISABLED
+        self.saveButton['state'] = tk.DISABLED
+
+    def export_leafs(self):
+        if not os.path.exists(path_leafoutput.get()):
+            os.makedirs(path_leafoutput.get())
+
+        for i, leaf in enumerate(self.leafs):
+            key, filename, index = self.convert_index_to_json(self.leafs[i]["index"])
+            if self.jsonObject[key]["regions"][index]["region_attributes"]["leaftinder"] == "yes":
+                #cv2.imwrite(os.path.join(path_leafoutput.get(),'IMG_{0}_ROI_mask_{1}.png'.format(filename,index)), leaf["image"])
+                leaf["image"].save(os.path.join(path_leafoutput.get(),'IMG_{0}_ROI_mask_{1}.png'.format(filename,index)))
+
+    def save_json(self):
+        # save json
+        self.startButton['state'] = tk.NORMAL
+        self.yesButton['state'] = tk.DISABLED
+        self.noButton['state'] = tk.DISABLED
+        self.saveButton['state'] = tk.DISABLED
+        with open(path_segmentfolder.get(), 'w') as f:
+            json.dump(self.jsonObject, f)
+        self.export_leafs()
+        return
+
+    def process_input(self,decision):
+        key, filename, index = self.convert_index_to_json(self.leafs[self.index]["index"])
+        self.jsonObject[key]["regions"][index]["region_attributes"]["leaftinder"]
+        if decision == True:
+            self.jsonObject[key]["regions"][index]["region_attributes"]["leaftinder"] = "yes"
+            print('yes')
+        else:
+            print('no')
+            self.jsonObject[key]["regions"][index]["region_attributes"]["leaftinder"] = "no"
+        self.show_next_image()
+        return
+    
+    def show_next_image(self):
+        self.index += 1
+        if self.index >= len(self.leafs):
+            self.index = 0
+            self.save_json()
+        # show next undecided image
+        self.image = self.leafs[self.index]["image"]
+        #image.thumbnail(maxsize, Image.ANTIALIAS)
+        #image = resize_image_height(image,self.maxsize)
+        self.img = ImageTk.PhotoImage(self.image)
+        self.canvas.itemconfig(self.image_container,image=self.img,anchor=tk.NW)
+        self.canvas.coords(self.image_container,(main_canvas_width-200-self.image.size[0])/2,(main_canvas_height-200-self.image.size[1])/2)
+        return
+
+    def start_tinder(self):
+        # Check if everything is allright
+        self.index = -1
+        self.leafs = []
+        #open json
+        with open(path_segmentfolder.get()) as jsonFile:
+            self.jsonObject = json.load(jsonFile)
+            jsonFile.close()
+        
+        self.load_leafs(path_raw_data.get())
+
+        self.show_next_image()
+        #filesize = os.path.getsize(os.path.join(img_path,image_name))   
+    
+        #key = image_name + str(filesize)
+        # load images
+        # check output folder
+        self.startButton['state'] = tk.DISABLED
+        self.yesButton['state'] = tk.NORMAL
+        self.noButton['state'] = tk.NORMAL
+        self.saveButton['state'] = tk.NORMAL
+        return
+
+    def load_leafs(self,folder):
+        # self.images = []
+        # self.image_names = []
+        # for file in os.listdir(folder):
+        #     if file.lower().endswith(".jpg") or file.lower().endswith(".png"):
+        #         image = Image.open(os.path.join(folder,file))
+        #         self.images.append(image)
+        #         self.image_names.append(file)
+        annotations = list(self.jsonObject.values())  # don't need the dict keys
+
+        # The VIA tool saves images in the JSON even if they don't have any
+        # annotations. Skip unannotated images.
+        annotations = [a for a in annotations if a['regions']]
+        lastIndex = 0
+        # Add images
+        for a in annotations:
+            # Get the x, y coordinaets of points of the polygons that make up
+            # the outline of each object instance. These are stores in the
+            # shape_attributes (see json format above)
+            # The if condition is needed to support VIA versions 1.x and 2.x.
+            if type(a['regions']) is dict:
+                polygons = [r['shape_attributes'] for r in a['regions'].values()]
+            else:
+                polygons = [r['shape_attributes'] for r in a['regions']]
+            img = cv2.imread(os.path.join(folder,a['filename']),flags=cv2.IMREAD_UNCHANGED)
+            if img is None:
+                print("img is NoneType")
+            height, width, channels = img.shape
+            #print(os.path.join(LEAF_FOLDER,image))
+            #print(leaf_image.shape)
+            new_width = int(img.shape[1] * 33 / 100)
+            new_height = int(img.shape[0] * 33 / 100)
+            dim = (new_width, new_height)
+
+            # resize image
+            resized = cv2.resize(img, dim, interpolation = cv2.INTER_LINEAR_EXACT)
+
+            masks = np.zeros([new_height, new_width, len(polygons)],dtype=np.uint8)
+
+            for i, p in enumerate(polygons):
+                # Get indexes of pixels inside the polygon and set them to 1
+                rr, cc = skimage.draw.polygon(p['all_points_y'], p['all_points_x'])
+
+                #fixes index out of bounds as described by https://github.com/matterport/Mask_RCNN/issues/636
+
+                mask = np.zeros([height,width,1])
+                rr[rr > mask.shape[0]-1] = mask.shape[0]-1
+                cc[cc > mask.shape[1]-1] = mask.shape[1]-1
+                mask[rr, cc] = 1
+                masks[:, :, i] = cv2.resize(mask, dim, interpolation = cv2.INTER_NEAREST)
+
+            #%%
+            boxes = np.zeros([masks.shape[-1], 4], dtype=np.int32)
+
+            for i in range(masks.shape[-1]):
+                m = masks[:, :, i]
+                # Bounding box.
+                horizontal_indicies = np.where(np.any(m, axis=0))[0]
+                vertical_indicies = np.where(np.any(m, axis=1))[0]
+                if horizontal_indicies.shape[0]:
+                    x1, x2 = horizontal_indicies[[0, -1]]
+                    y1, y2 = vertical_indicies[[0, -1]]
+                    # x2 and y2 should not be part of the box. Increment by 1.
+                    x2 += 1
+                    y2 += 1
+                else:
+                    # No mask for this instance. Might happen due to
+                    # resizing or cropping. Set bbox to zeros
+                    x1, x2, y1, y2 = 0, 0, 0, 0
+                boxes[i] = np.array([y1, y2,x1, x2])
+
+            #print(boxes)
+
+            for index, box in enumerate(boxes):
+                ROI = resized[box[0]:box[1],box[2]:box[3]]
+                if ROI.shape[0] == 0:
+                    print("ROI is NoneType")
+                    continue
+                # First create the image with alpha channel
+                rgba = cv2.cvtColor(ROI, cv2.COLOR_RGB2RGBA)
+                # Then assign the mask to the last channel of the image
+                mask = masks[box[0]:box[1],box[2]:box[3],index]*255
+                rgba[:, :, 3] = mask
+                self.leafs.append({"index": index + lastIndex, "image":Image.fromarray(rgba)})
+                #cv2.imwrite('./ResultingLeafimages/IMG_{0}_ROI_mask{1}.png'.format(j,index), mask)
+                #cv2.imwrite('./ResultingLeafimages/IMG_{0}_ROI_mask_{1}.png'.format(a['filename'],index), rgba)
+            lastIndex += len(boxes)
+
+    def convert_index_to_json(self,index):
+        for key, image in self.jsonObject.items():
+            #key = image.keys()[i]
+            filename = image["filename"]
+            num = len(image["regions"])
+            if index - num < 0:
+                break
+            else:
+                index = index - num
+        return key, filename, index
 
 class PageCollage(tk.Frame):
     def __init__(self, parent):
@@ -191,14 +375,14 @@ window.columnconfigure(0, minsize=260)
 window.columnconfigure(1, minsize=1270)
 window.rowconfigure([0, 0], minsize=780)
 
-path_raw_data = tk.StringVar(value = "C:/Path")
-path_aiweights = tk.StringVar(value = "C:/Weights")
-path_model = tk.StringVar(value = "C:/Weights")
-path_leafoutput = tk.StringVar(value = "C:/LeafOutput")
-path_collagefolder = tk.StringVar(value = "C:/CollageFolder")
-path_trainfolder = tk.StringVar(value = "C:/TrainFolder")
-path_testfolder = tk.StringVar(value = "C:/TestFolder")
-path_segmentfolder = tk.StringVar(value = "C:/Segmented")
+path_raw_data = tk.StringVar(value = "D:/Protohaus/Basil_Database/Basilikum/Basilikum/genovese/erwachsen/gesund/Testset")
+path_aiweights = tk.StringVar(value = "D:/Protohaus/GitHub/mask-rcnn/mask_rcnn_leafscollage.h5")
+path_model = tk.StringVar(value = "D:/Protohaus/GitHub/mask-rcnn/")
+path_leafoutput = tk.StringVar(value = "D:/Protohaus/LeafOutput")
+path_collagefolder = tk.StringVar(value = "D:/Protohaus/CollageFolder")
+path_trainfolder = tk.StringVar(value = "D:/Protohaus/TrainFolder")
+path_testfolder = tk.StringVar(value = "D:/Protohaus/TestFolder")
+path_segmentfolder = tk.StringVar(value = "D:/Protohaus/Segmented")
 
 frm_menu = ttk.Frame(master=window,relief=tk.RAISED,border=5)
 frm_menu.grid(row=0,column=0, padx=grid_pad, pady=grid_pad, sticky="nsew")
@@ -240,8 +424,13 @@ btn_manualsegmentation = ttk.Button(master=frm_segmentation,text="Manual Segment
 btn_manualsegmentation.grid(row=1,column=1)
 btn_clearsegmentation = ttk.Button(master=frm_segmentation,text="Clear Data")
 btn_clearsegmentation.grid(row=2,column=0,sticky="w")
+ent_json = ttk.Entry(master=frm_segmentation,textvariable=path_segmentfolder)
+#ent_weightsfile.insert(-1,'C:/Weights')
+ent_json.grid(row=3,column=1, sticky = "e")
+btn_choosejson = ttk.Button(master=frm_segmentation,text="Browse",command=lambda: select_file(path_segmentfolder))
+btn_choosejson.grid(row=3,column=2,sticky="e")
 btn_showsegmentation = ttk.Button(master=frm_segmentation,text="Show Segmentation",command=lambda: [show_frame(frames,"PageSegmentation"),show_frame(frames,"PageInfoSegmentation")])
-btn_showsegmentation.grid(row=2,column=1,sticky="e")
+btn_showsegmentation.grid(row=4,column=0,sticky="e")
 
 
 frm_leaftinder= ttk.Frame(master=frm_menu,relief=tk.RAISED,border=5)
