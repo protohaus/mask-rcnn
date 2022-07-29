@@ -1,25 +1,23 @@
-from fileinput import filename
-from tkinter import filedialog, image_names
+from tkinter import filedialog
 import tkinter as tk
 import tkinter.ttk as ttk
 import os
 import random
-from PIL import ImageTk, Image
-from AIBatchInference import *
-import time
+from PIL import ImageTk, Image, ImageOps
+from gui.AIBatchInference import *
 import threading
 import webbrowser
-import array
 
 class NewWindow(tk.Toplevel):
      
-    def __init__(self, master = None):
+    def __init__(self, master = None,window_title = None,window_label = None,event=None):
          
         super().__init__(master = master)
-        self.title("AI Batch Progress")
+        self.title(window_title)
+        self.event = event
         self.geometry("250x100")
-        label = ttk.Label(self, text ="Doing AI Batch Inference. Please wait...")
-        label.pack()
+        self.label = ttk.Label(self, text =window_label)
+        self.label.pack()
         # progressbar
         pb = ttk.Progressbar(
             self,
@@ -29,6 +27,19 @@ class NewWindow(tk.Toplevel):
         )
         pb.pack()
         pb.start()
+        self.btn_cancel = ttk.Button(self,text="Cancel",command=self.cancel)
+        self.btn_cancel.pack()
+
+    def cancel(self):
+        self.label.config(text='Cancelling...')
+        self.event.set()
+
+    def monitor_thread(self,thread_to_monitor):
+        self.thread = thread_to_monitor
+        if thread_to_monitor.is_alive():
+            self.after(100,lambda: self.monitor_thread(thread_to_monitor))
+        else:
+            self.close_window()
 
     def close_window(self):
         print("Closing Window")
@@ -55,12 +66,12 @@ def resize_image_height(image,size):
     return image.resize((int(factor*width),int(factor*height)))
 
 def do_ai_batch_inference(path_model, path_aiweights, path_raw_data):
-    newWindow = NewWindow()
+    event = threading.Event()
+    newWindow = NewWindow(master=None,window_title = "AI Batch Progress",window_label="Doing AI Batch Inference. Please wait...",event=event)
     newWindow.update()
     th = threading.Thread(target= batch_inference, args=[path_model,path_aiweights,path_raw_data])
     th.start()
-    th.join()
-    newWindow.close_window()
+    newWindow.monitor_thread(th)
     return
 
 def open_webbroser(url):
@@ -73,16 +84,18 @@ def open_random_image(folder):
     for file in os.listdir(folder):
         if file.lower().endswith(".jpg") or file.lower().endswith(".png"):
             image = Image.open(os.path.join(folder,file))
+            image = ImageOps.exif_transpose(image)
             images.append(image)
             image_name.append(file)
     index = random.randint(0,len(images)-1)
     return images[index] , image_name[index]
 
-def load_image(self,height,width, path):
+def load_image(self,height,width, path,resize):
         image , image_name =  open_random_image(path.get())
         maxsize = height
         #image.thumbnail(maxsize, Image.ANTIALIAS)
-        image = resize_image_height(image,maxsize)
+        if resize:
+            image = resize_image_height(image,maxsize)
         self.img = ImageTk.PhotoImage(image)
         self.canvas.itemconfig(self.image_container,image=self.img,anchor=tk.NW)
         self.canvas.coords(self.image_container,(width-image.size[0])/2,(height-image.size[1])/2,)
@@ -91,6 +104,8 @@ def load_image(self,height,width, path):
 
 def count_images(folder):
     count = 0
+    if not os.path.exists(folder.get()):
+        return 0
     for file in os.listdir(folder.get()):
         if file.lower().endswith(".jpg") or file.lower().endswith(".png"):
             count += 1

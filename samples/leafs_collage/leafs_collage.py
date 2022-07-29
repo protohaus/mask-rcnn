@@ -33,6 +33,7 @@ import datetime
 import json
 import numpy as np
 import skimage.draw
+import tensorflow.keras as keras
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
@@ -97,7 +98,7 @@ class LeafsCollageConfig(Config):
 
     # If enabled, resizes instance masks to a smaller size to reduce
     # memory load. Recommended when using high-resolution images.
-    USE_MINI_MASK = True
+    USE_MINI_MASK = False
     MINI_MASK_SHAPE = (56, 56)  # (height, width) of the mini-mask
 
     # Non-max suppression threshold to filter RPN proposals.
@@ -110,7 +111,7 @@ class LeafsCollageConfig(Config):
     # Max number of final detections
     DETECTION_MAX_INSTANCES = 200
 
-    IMAGE_RESIZE_MODE = "crop"
+    IMAGE_RESIZE_MODE = "square"
     IMAGE_MIN_DIM = 1024
     IMAGE_MAX_DIM = 1024
 
@@ -246,8 +247,56 @@ class LeafsCollageDataset(utils.Dataset):
             super(self.__class__, self).image_reference(image_id)
 
     # The following two functions are from pycocotools with a few changes.
+class TerminateOnFlag(keras.callbacks.Callback):
+    def __init__(self, event = None):
+        super(TerminateOnFlag, self).__init__()
+        self.event = event
+    def on_train_begin(self, batch, logs=None):
+        print("Check if cancelled on epoch begin")
+        if self.event.is_set():
+            self.model.stop_training = True
 
+    def on_batch_begin(self, batch, logs=None):
+        print("Check if cancelled on batch begin")
+        if self.event.is_set():
+            self.model.stop_training = True
 
+    def on_batch_end(self, batch, logs=None):
+        print("Check if cancelled on batch end")
+        if self.event.is_set():
+            self.model.stop_training = True
+
+def train_from_import(LOG_FOLDER,WEIGHTS_PATH,DATASET_DIR,layers,epochs,lr,event):
+    config = LeafsCollageConfig()
+    config.display()
+    model = modellib.MaskRCNN(mode="training", config=config,
+                                  model_dir=LOG_FOLDER)
+    weights_path = WEIGHTS_PATH
+    # Load weights
+    print("Loading weights ", weights_path)
+    model.load_weights(weights_path, by_name=True)
+
+    """Train the model."""
+    # Training dataset.
+    dataset_train = LeafsCollageDataset()
+    dataset_train.load_leafs(DATASET_DIR, "train")
+    dataset_train.prepare()
+
+    # Validation dataset
+    dataset_val = LeafsCollageDataset()
+    dataset_val.load_leafs(DATASET_DIR, "val")
+    dataset_val.prepare()
+
+    # *** This training schedule is an example. Update to your needs ***
+    # Since we're using a very small dataset, and starting from
+    # COCO trained weights, we don't need to train too long. Also,
+    # no need to train all layers, just the heads should do it.
+    print("Training network heads")
+    model.train(dataset_train, dataset_val,
+                learning_rate=lr,
+                epochs=epochs,
+                layers=layers,
+                custom_callbacks=[TerminateOnFlag(event)])
 
 def train(model):
     """Train the model."""
@@ -441,3 +490,4 @@ if __name__ == '__main__':
     else:
         print("'{}' is not recognized. "
               "Use 'train' or 'splash'".format(args.command))
+

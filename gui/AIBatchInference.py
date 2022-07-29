@@ -1,9 +1,11 @@
 #%%
+from fileinput import filename
 import os
 import sys
 import random
 import json
 import math
+from unittest import TestSuite
 import cv2
 import time
 import numpy as np
@@ -24,6 +26,7 @@ from mrcnn.config import Config
 from mrcnn import visualize
 from mrcnn.visualize import display_images
 import mrcnn.model as modellib
+
 
 from samples.leafs_collage import leafs_collage
 
@@ -159,6 +162,40 @@ class AIBatchInference():
         with open(os.path.join(self.BATCH_INPUT_DIR,'via_region_data{0}.json'.format(dt_string)), 'w') as f:
             json.dump(annotations, f)
 
+    def validate(self,TESTSET_INPUT_DIR,results):
+        dataset_test = leafs_collage.LeafsCollageDataset()
+        dataset_test.load_leafs(TESTSET_INPUT_DIR, "val")
+        dataset_test.prepare()
+        dataset = dataset_test
+        # image_id is filename
+        for name in self.filenames:
+            img, image_meta, gt_class_ids, gt_boxes, gt_masks = modellib.load_image_gt(dataset_test, self.config, dataset_test.image_from_source_map["leafs." + name])
+        scaled_masks = np.zeros([1024, 1024, self.results[27][0]['masks'].shape[2]],
+                dtype=np.bool)
+        img, window, scale, padding, crop = utils.resize_image(self.images[0],max_dim = 1024)
+        for i in range(self.results[27][0]['masks'].shape[2]):
+            scaled_masks[:,:,i] = utils.resize_mask(self.results[27][0]['masks'][:,:,[i]],scale,padding)[:,:,0]
+        mAP, precisions, recalls, overlaps = utils.compute_ap(gt_boxes,gt_class_ids,gt_masks,self.results[27][0]['rois'],self.results[27][0]['class_ids'],self.results[27][0]['scores'],scaled_masks)
+        results["mAP"] = mAP
+        results["precisions"] = precisions
+        results["recalls"] = recalls
+        results["overlaps"] = overlaps
+        #return mAP, precisions, recalls, overlaps
+
+    def activations(self,TEST_INPUT_FILE,layer):
+        image = cv2.imread(TEST_INPUT_FILE)
+        # Get activations of a few sample layers
+        activations = self.model.run_graph([image], [
+            ("input_image",        tf.identity(self.model.keras_model.get_layer("input_image").output)),
+            (layer,          self.model.keras_model.get_layer("res4w_out").output),  # for resnet100
+            ("rpn_bbox",           self.model.keras_model.get_layer("rpn_bbox").output),
+            ("roi",                self.model.keras_model.get_layer("ROI").output),
+        ])
+
+        # Backbone feature map
+        resulting = np.transpose(activations[layer][0,:,:,:4], [2, 0, 1])
+        return resulting
+
 def batch_inference(MODEL_DIR,LEAFS_MODEL_PATH,BATCH_INPUT_DIR):
     #TODO: create checks for valid input
     batch = AIBatchInference(MODEL_DIR,LEAFS_MODEL_PATH,BATCH_INPUT_DIR)
@@ -166,6 +203,17 @@ def batch_inference(MODEL_DIR,LEAFS_MODEL_PATH,BATCH_INPUT_DIR):
     batch.do_inference()
     batch.save_results()
 
+def batch_validation(MODEL_DIR,LEAFS_MODEL_PATH,TESTSET_INPUT_DIR,results):
+    batch = AIBatchInference(MODEL_DIR,LEAFS_MODEL_PATH,os.path.join(TESTSET_INPUT_DIR,"val"))
+    batch.prepare_inference()
+    batch.do_inference()
+    batch.validate(TESTSET_INPUT_DIR,results)
+
+def show_activation(MODEL_DIR,LEAFS_MODEL_PATH,BATCH_INPUT_DIR,layer):
+    batch = AIBatchInference(MODEL_DIR,LEAFS_MODEL_PATH,BATCH_INPUT_DIR)
+    batch.prepare_inference()
+    results = batch.activations(BATCH_INPUT_DIR,layer)
+    return results
 
 # Directory to save logs and trained model
 #MODEL_DIR = os.path.join(ROOT_DIR, "logs")
