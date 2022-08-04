@@ -73,7 +73,7 @@ class LeafsCollageConfig(Config):
     # GPU_COUNT = 8
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 1  # Only two classes for now, background and leafs. Use more classes later (healthy and withered).
+    NUM_CLASSES = 1 + 2  # 3 classes, background, healthy and withered
 
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 100
@@ -149,6 +149,7 @@ class LeafsCollageDataset(utils.Dataset):
 
         # Add classes
         self.add_class("leafs", 1, "leafs")
+        self.add_class("withered", 2, "withered")
 
        # Train or validation dataset?
         assert subset in ["train", "val"]
@@ -184,9 +185,9 @@ class LeafsCollageDataset(utils.Dataset):
             # shape_attributes (see json format above)
             # The if condition is needed to support VIA versions 1.x and 2.x.
             if type(a['regions']) is dict:
-                polygons = [r['shape_attributes'] for r in a['regions'].values()]
+                polygons = [{**r['shape_attributes'],**r['region_attributes']} for r in a['regions'].values()]
             else:
-                polygons = [r['shape_attributes'] for r in a['regions']] 
+                polygons = [{**r['shape_attributes'],**r['region_attributes']} for r in a['regions']] 
 
             # load_mask() needs the image size to convert polygons to masks.
             # Unfortunately, VIA doesn't include it in JSON, so we must read
@@ -224,7 +225,9 @@ class LeafsCollageDataset(utils.Dataset):
         info = self.image_info[image_id]
         mask = np.zeros([info["height"], info["width"], len(info["polygons"])],
                         dtype=np.bool)
+        classes = np.zeros([mask.shape[-1]], dtype=np.int32)
         for i, p in enumerate(info["polygons"]):
+            # TODO: get class ID, 0: BG, 1: Leaf, 2: Withered
             # Get indexes of pixels inside the polygon and set them to 1
             rr, cc = skimage.draw.polygon(p['all_points_y'], p['all_points_x'])
 
@@ -233,10 +236,14 @@ class LeafsCollageDataset(utils.Dataset):
             cc[cc > mask.shape[1]-1] = mask.shape[1]-1
 
             mask[rr, cc, i] = 1
+            if p['State'] == 'healthy':
+                classes[i] = 1
+            else:
+                classes[i] = 2
 
         # Return mask, and array of class IDs of each instance. Since we have
         # one class ID only, we return an array of 1s
-        return mask.astype(np.bool), np.ones([mask.shape[-1]], dtype=np.int32)
+        return mask.astype(np.bool), classes#np.ones([mask.shape[-1]], dtype=np.int32)
 
     def image_reference(self, image_id):
         """Return the path of the image."""
@@ -252,17 +259,17 @@ class TerminateOnFlag(keras.callbacks.Callback):
         super(TerminateOnFlag, self).__init__()
         self.event = event
     def on_train_begin(self, batch, logs=None):
-        print("Check if cancelled on epoch begin")
+        #print("Check if cancelled on epoch begin")
         if self.event.is_set():
             self.model.stop_training = True
 
     def on_batch_begin(self, batch, logs=None):
-        print("Check if cancelled on batch begin")
+        #print("Check if cancelled on batch begin")
         if self.event.is_set():
             self.model.stop_training = True
 
     def on_batch_end(self, batch, logs=None):
-        print("Check if cancelled on batch end")
+        #print("Check if cancelled on batch end")
         if self.event.is_set():
             self.model.stop_training = True
 
@@ -274,7 +281,10 @@ def train_from_import(LOG_FOLDER,WEIGHTS_PATH,DATASET_DIR,layers,epochs,lr,event
     weights_path = WEIGHTS_PATH
     # Load weights
     print("Loading weights ", weights_path)
-    model.load_weights(weights_path, by_name=True)
+    #model.load_weights(weights_path, by_name=True)
+    model.load_weights(weights_path, by_name=True, exclude=[
+            "mrcnn_class_logits", "mrcnn_bbox_fc",
+            "mrcnn_bbox", "mrcnn_mask"])
 
     """Train the model."""
     # Training dataset.

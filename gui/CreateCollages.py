@@ -25,6 +25,26 @@ def pick_random_unique_color(colors):
     #print(colors)
     return colors
 
+# There are three channels, we need 2 kinds of information: Which instance and which
+# class: take blue for classes then there are 255 different classes possible,
+# with 256*256 = 65536 instances per class, black is for background
+def pick_random_unique_redgreen(colors,class_index):
+    r = 0
+    g = 0
+    b = class_index
+    new_color = np.array([r,g,b])
+
+    subcolors = [color for color in colors[:] if (color[:][2] == class_index or color[:][2] == 0)]
+
+    while np.equal(subcolors,new_color).any():
+        r = random.randint(0,255)
+        g = random.randint(0,255)
+        new_color = np.array([r,g,b])
+    
+    colors = np.vstack([colors,new_color])
+    #print(colors)
+    return colors
+
 def pick_random_grayscale(grays):
     g = 0
 
@@ -100,7 +120,7 @@ def scale_random(img):
 # add random leaf with random rotation, shear, scale and location
 # To-Do: Scalierung ermöglichen
 
-def overlay_image(img,img_overlay,img_mask,y_c,x_c,mask_colors):
+def overlay_image(img,img_overlay,img_mask,y_c,x_c,mask_colors,category):
 
     if y_c < 0 or x_c < 0 or y_c > img.shape[0] or x_c > img.shape[1]:
         return
@@ -127,17 +147,18 @@ def overlay_image(img,img_overlay,img_mask,y_c,x_c,mask_colors):
     alpha_mask_bg = 1.0 - alpha_mask
 
     #mask_colors = pick_random_unique_color(mask_colors)
-    gray_colors = pick_random_grayscale(mask_colors)
+    mask_colors = pick_random_unique_redgreen(mask_colors,category)
+    #gray_colors = pick_random_grayscale(mask_colors)
 
-    mask_leaf = np.zeros([img_overlay.shape[0],img_overlay.shape[1],1],dtype=np.uint8)
-    mask_leaf[:,:] = gray_colors[-1]
+    mask_leaf = np.zeros([img_overlay.shape[0],img_overlay.shape[1],3],dtype=np.uint8)
+    mask_leaf[:,:] = mask_colors[-1]
 
     for c in range(0, 3):
         img[y1:y2, x1:x2, c] = (alpha_leafs * img_overlay[y1o:y2o, x1o:x2o, c] +
                                 alpha_bg * img[y1:y2, x1:x2, c])
 
-    img_mask[y1:y2, x1:x2,0] = (alpha_mask * mask_leaf[y1o:y2o, x1o:x2o, 0] +
-                              alpha_mask_bg * img_mask[y1:y2, x1:x2,0])
+        img_mask[y1:y2, x1:x2,c] = (alpha_mask * mask_leaf[y1o:y2o, x1o:x2o, c] +
+                              alpha_mask_bg * img_mask[y1:y2, x1:x2,c])
 #%% create random image transformations
 def random_transformation(image):
     rotated = rotate_image(image,random.uniform(-180.0,180.0))
@@ -163,19 +184,37 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
     if not os.path.exists(BG_FOLDER):
         print("Background folder not existing...")
         return
+    healthy_path = os.path.join(LEAF_FOLDER,'healthy')
+    withered_path = os.path.join(LEAF_FOLDER,'withered')
+    if not os.path.exists(healthy_path):
+        print("Healthy Leaf folder not existing...")
+        return
+    if not os.path.exists(withered_path):
+        print("Withered Leaf folder not existing...")
+        return
 
-    leaf_images = []
+    leaf_images = {'healthy':[],'withered':[]}
     bg_images = []
     mask_images = []
     scale_percent = 35 # percent of original size
 
-    for image in os.listdir(LEAF_FOLDER):
+    for image in os.listdir(healthy_path):
         if image.lower().endswith('.png'):
-            leaf_image = cv2.imread(os.path.join(LEAF_FOLDER,image),flags=cv2.IMREAD_UNCHANGED)
-            leaf_images.append(leaf_image)
+            leaf_image = cv2.imread(os.path.join(healthy_path,image),flags=cv2.IMREAD_UNCHANGED)
+            leaf_images['healthy'].append(leaf_image)# and class
         else:
             print("Found non-png type in folder.")
-    if len(leaf_images) == 0:
+    if len(leaf_images['healthy']) == 0:
+        print("Loaded 0 leaf images")
+        return
+
+    for image in os.listdir(withered_path):
+        if image.lower().endswith('.png'):
+            leaf_image = cv2.imread(os.path.join(withered_path,image),flags=cv2.IMREAD_UNCHANGED)
+            leaf_images['withered'].append(leaf_image)# and class
+        else:
+            print("Found non-png type in folder.")
+    if len(leaf_images['healthy']) == 0:
         print("Loaded 0 leaf images")
         return
 
@@ -199,14 +238,18 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
     for i in range(N):
         bg_index = random.randint(0,len(bg_images)-1)
         bg_image = np.copy(bg_images[bg_index])
-        mask_image = np.zeros([bg_image.shape[0],bg_image.shape[1],1],dtype=np.uint8)
+        mask_image = np.zeros([bg_image.shape[0],bg_image.shape[1],3],dtype=np.uint8)
         regions = []
-        #colors = np.array([0,0,0])
-        colors = np.array([0])
+        colors = np.array([[0,0,0]])
+        #colors = np.array([0])
 
         for j in range(random.randint(25,150)):
-            overlay_image(bg_image,random_transformation(leaf_images[random.randint(0,len(leaf_images)-1)]),mask_image,
-                                random.randint(0,bg_image.shape[0]),random.randint(0,bg_image.shape[1]),colors)
+            category = random.randint(1,2)
+            key = 'healthy'
+            if category == 2:
+                key = 'withered'
+            overlay_image(bg_image,random_transformation(leaf_images[key][random.randint(0,len(leaf_images)-1)]),mask_image,
+                                random.randint(0,bg_image.shape[0]),random.randint(0,bg_image.shape[1]),colors,category)
         now = datetime.now()
     
         # dd/mm/YY H:M:S
@@ -215,13 +258,14 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
         filename = 'cb_{0}_{1}.jpg'.format(dt_string,i)
         cv2.imwrite(os.path.join(OUTPUT_FOLDER,filename), bg_image, [cv2.IMWRITE_PNG_COMPRESSION, 0])
         print(os.path.join(OUTPUT_FOLDER,filename))
-        all_grayscales = mask_image.flatten()
-        unique_grays = np.unique(all_grayscales, axis=0)
-        new_unique_grays = np.delete(unique_grays, 0)
+        d1,d2,d3 = mask_image.shape
+        all_colors = mask_image.reshape([d1*d2,d3])
+        unique_colors = np.unique(all_colors, axis=0)
+        new_unique_colors = np.delete(unique_colors, 0,0)
 
-        for gray in new_unique_grays:
+        for color in new_unique_colors[:]:
             mask = np.zeros((mask_image.shape[0],mask_image.shape[1],1),dtype="uint8")
-            mask[np.where(mask_image==gray)] = 255
+            mask[np.all(mask_image == color, axis=-1)] = 255
             contours, hierarchy = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_TC89_KCOS)
             #img = cv2.drawContours(leaf_collage, contours, -1, (0,255,75), 2)
             #plt.imshow(img)
@@ -232,11 +276,16 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
                 all_points_y = approximations[:,:,1]
                 reshaped_x = all_points_x.flatten()
                 reshaped_y = all_points_y.flatten()
+                state= ''
+                if color[2] == 1:
+                    state = 'healthy'
+                if color[2] == 2:
+                    state = 'withered'
                 #img = cv2.drawContours(leaf_collage, [approximations], 0, (0), 3)
                 region = {"shape_attributes":{"name":"polygon","all_points_x":reshaped_x.tolist(),"all_points_y":reshaped_y.tolist()},           
                             "region_attributes": {
                             "Type": "Leaf",
-                            "State": "healthy",
+                            "State": state,
                             "Sort": "Genovese",
                             "Age": "medium"
                         }}

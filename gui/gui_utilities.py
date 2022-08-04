@@ -1,3 +1,4 @@
+from genericpath import isdir
 from tkinter import filedialog
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -104,11 +105,13 @@ def load_image(self,height,width, path,resize):
 
 def count_images(folder):
     count = 0
-    if not os.path.exists(folder.get()):
+    if not os.path.exists(folder):
         return 0
-    for file in os.listdir(folder.get()):
+    for file in os.listdir(folder):
         if file.lower().endswith(".jpg") or file.lower().endswith(".png"):
             count += 1
+        elif os.path.isdir(os.path.join(folder,file)):
+            count += count_images(os.path.join(folder,file))
     return count
 
 def load_contours(img_path,json_path,image_name):

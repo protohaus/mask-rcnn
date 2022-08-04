@@ -136,30 +136,46 @@ class PageLeafTinder(tk.Frame):
         self.image_container = self.canvas.create_image((main_canvas_width-100-self.image.size[0])/2,(main_canvas_height-100-self.image.size[1])/2, anchor=tk.NW,image=self.img)
         self.startButton = ttk.Button(self, text = "Start", command = lambda: self.start_tinder())
         self.startButton.grid(row=2, column = 0)
-        self.yesButton = ttk.Button(self, text = "Yes", command = lambda: self.process_input(True))
-        self.yesButton.grid(row = 2, column = 1)
-        self.noButton = ttk.Button(self, text = "No", command = lambda: self.process_input(False))
-        self.noButton.grid(row = 3, column = 1)
+        self.lbl_descr = ttk.Label(self,text = "Leaf category: ")
+        self.lbl_descr.grid(row=2, column=1)
+        self.lbl_state = ttk.Label(self,text = "")
+        self.lbl_state.grid(row=3, column=1)
+        self.healthyButton = ttk.Button(self, text = "healthy", command = lambda: self.process_input(True,'healthy'))
+        self.healthyButton.grid(row = 4, column = 1)
+        self.witheredButton = ttk.Button(self, text = "withered", command = lambda: self.process_input(True,'withered'))
+        self.witheredButton.grid(row = 5, column = 1)
+        self.noButton = ttk.Button(self, text = "Discard", command = lambda: self.process_input(False,''))
+        self.noButton.grid(row = 6, column = 1)
         self.saveButton = ttk.Button(self, text = "Save Data", command = self.save_json)
-        self.saveButton.grid(row = 4, column = 0)
-        self.yesButton['state'] = tk.DISABLED
+        self.saveButton.grid(row = 7, column = 0)
+        self.healthyButton['state'] = tk.DISABLED
+        self.witheredButton['state'] = tk.DISABLED
         self.noButton['state'] = tk.DISABLED
         self.saveButton['state'] = tk.DISABLED
 
     def export_leafs(self):
-        if not os.path.exists(path_leafoutput.get()):
-            os.makedirs(path_leafoutput.get())
+        healthypath =os.path.join( path_leafoutput.get(),'healthy')
+        witheredpath =os.path.join( path_leafoutput.get(),'withered')
+        if not os.path.exists(healthypath):
+            os.makedirs(healthypath)
+        if not os.path.exists(witheredpath):
+            os.makedirs(witheredpath)
 
         for i, leaf in enumerate(self.leafs):
             key, filename, index = self.convert_index_to_json(self.leafs[i]["index"])
             if self.jsonObject[key]["regions"][index]["region_attributes"]["leaftinder"] == "yes":
+                if self.jsonObject[key]["regions"][index]["region_attributes"]["State"] == "healthy":
                 #cv2.imwrite(os.path.join(path_leafoutput.get(),'IMG_{0}_ROI_mask_{1}.png'.format(filename,index)), leaf["image"])
-                leaf["image"].save(os.path.join(path_leafoutput.get(),'IMG_{0}_ROI_mask_{1}.png'.format(filename,index)))
+                    leaf["image"].save(os.path.join(healthypath,'IMG_{0}_ROI_mask_{1}.png'.format(filename,index)))
+                if self.jsonObject[key]["regions"][index]["region_attributes"]["State"] == "withered":
+                #cv2.imwrite(os.path.join(path_leafoutput.get(),'IMG_{0}_ROI_mask_{1}.png'.format(filename,index)), leaf["image"])
+                    leaf["image"].save(os.path.join(witheredpath,'IMG_{0}_ROI_mask_{1}.png'.format(filename,index)))
 
     def save_json(self):
         # save json
         self.startButton['state'] = tk.NORMAL
-        self.yesButton['state'] = tk.DISABLED
+        self.healthyButton['state'] = tk.DISABLED
+        self.witheredButton['state'] = tk.DISABLED
         self.noButton['state'] = tk.DISABLED
         self.saveButton['state'] = tk.DISABLED
         with open(path_segmentfolder.get(), 'w') as f:
@@ -167,11 +183,12 @@ class PageLeafTinder(tk.Frame):
         self.export_leafs()
         return
 
-    def process_input(self,decision):
+    def process_input(self,decision,category):
         key, filename, index = self.convert_index_to_json(self.leafs[self.index]["index"])
         #self.jsonObject[key]["regions"][index]["region_attributes"]["leaftinder"]
         if decision == True:
             self.jsonObject[key]["regions"][index]["region_attributes"]["leaftinder"] = "yes"
+            self.jsonObject[key]["regions"][index]["region_attributes"]["State"] = category
             print('yes')
         else:
             print('no')
@@ -186,6 +203,8 @@ class PageLeafTinder(tk.Frame):
             self.save_json()
         # show next undecided image
         self.image = self.leafs[self.index]["image"]
+        key, filename, index = self.convert_index_to_json(self.leafs[self.index]["index"])
+        self.lbl_state.config(text=self.jsonObject[key]["regions"][index]["region_attributes"]["State"])
         #image.thumbnail(maxsize, Image.ANTIALIAS)
         #image = resize_image_height(image,self.maxsize)
         self.img = ImageTk.PhotoImage(self.image)
@@ -211,7 +230,8 @@ class PageLeafTinder(tk.Frame):
         # load images
         # check output folder
         self.startButton['state'] = tk.DISABLED
-        self.yesButton['state'] = tk.NORMAL
+        self.healthyButton['state'] = tk.NORMAL
+        self.witheredButton['state'] = tk.NORMAL
         self.noButton['state'] = tk.NORMAL
         self.saveButton['state'] = tk.NORMAL
         return
@@ -494,7 +514,7 @@ class PageMenuRawData(ttk.Frame):
         self.update_count()
 
     def update_count(self):
-        count = count_images(path_raw_data) 
+        count = count_images(path_raw_data.get()) 
         self.lbl_imagenumber.configure(text = str(count) + " images")
         self.lbl_imagenumber.after(1000, self.update_count)
 
@@ -520,7 +540,7 @@ class PageMenuLeafTinder(ttk.Frame):
         self.update_count()
 
     def update_count(self):
-        count = count_images(path_leafoutput)
+        count = count_images(path_leafoutput.get())
         self.lbl_imagenumber.configure(text = str(count) + " images")
         self.lbl_imagenumber.after(1000, self.update_count)
 
@@ -579,9 +599,9 @@ class PageMenuCollages(ttk.Frame):
         self.new_window.monitor_thread(th2)
 
     def update_count(self):
-        count = count_images(path_collagefolder)
+        count = count_images(path_collagefolder.get())
         self.lbl_imagenumber.configure(text = str(count) + " images")
-        count = count_images(path_backgroundfolder)
+        count = count_images(path_backgroundfolder.get())
         self.lbl_bgnumber.configure(text = str(count) + " images")
         self.lbl_imagenumber.after(1000, self.update_count)
 
