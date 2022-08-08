@@ -2360,7 +2360,7 @@ class MaskRCNN(object):
             workers = 0
         else:
             workers = multiprocessing.cpu_count()
-
+        print("Calling Keras model fit")
         self.keras_model.fit(
             train_generator,
             initial_epoch=self.epoch,

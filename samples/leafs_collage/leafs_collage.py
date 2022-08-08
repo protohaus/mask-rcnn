@@ -307,6 +307,18 @@ def train_from_import(LOG_FOLDER,WEIGHTS_PATH,DATASET_DIR,layers,epochs,lr,event
                 epochs=epochs,
                 layers=layers,
                 custom_callbacks=[TerminateOnFlag(event)])
+    # The following two functions are from pycocotools with a few changes.
+class AddExtraPrintStatements(keras.callbacks.Callback):
+    def __init__(self):
+        super(AddExtraPrintStatements, self).__init__()
+    def on_train_begin(self, batch, logs=None):
+        print("Check if on epoch begin")
+
+    def on_batch_begin(self, batch, logs=None):
+        print("Check if on batch begin")
+
+    def on_batch_end(self, batch, logs=None):
+        print("Check if cancelled on batch end")
 
 def train(model):
     """Train the model."""
@@ -328,7 +340,8 @@ def train(model):
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
                 epochs=100,
-                layers='3+')
+                layers='3+',
+                custom_callbacks = [AddExtraPrintStatements()])
 
 
 def color_splash(image, mask):
