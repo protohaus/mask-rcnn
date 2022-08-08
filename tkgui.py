@@ -613,7 +613,7 @@ window.columnconfigure(1, minsize=1270)
 window.rowconfigure([0, 0], minsize=780)
 
 path_raw_data = tk.StringVar(value = "D:/Protohaus/Basil_Database/Basilikum/Basilikum/genovese/erwachsen/gesund/Testset")
-path_aiweights = tk.StringVar(value = "D:/Protohaus/GitHub/mask-rcnn/mask_rcnn_leafscollage.h5")
+path_aiweights = tk.StringVar(value = "D:/Protohaus/GitHub/mask-rcnn/mask_rcnn_leafscollage_2classes.h5")
 path_input_image = tk.StringVar(value = "D:/Protohaus/Basil_Database/Basilikum/Basilikum/genovese/erwachsen/gesund/Testset/20210721_100816.jpg")
 path_model = tk.StringVar(value = "D:/Protohaus/GitHub/mask-rcnn/")
 path_leafoutput = tk.StringVar(value = "D:/Protohaus/LeafOutput")

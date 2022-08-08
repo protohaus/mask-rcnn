@@ -63,7 +63,7 @@ class AIBatchInference():
             NAME = "test"
             GPU_COUNT = 1
             IMAGES_PER_GPU = 1
-            NUM_CLASSES = 1 + 1
+            NUM_CLASSES = 1 + 2
 
             IMAGE_RESIZE_MODE = "square"
             IMAGE_MIN_DIM = 800
@@ -71,6 +71,8 @@ class AIBatchInference():
 
             # Skip detections with < 90% confidence
             DETECTION_MIN_CONFIDENCE = 0.8
+
+            USE_MINI_MASK = False
 
         self.config = TestConfig()
         self.config.display()
