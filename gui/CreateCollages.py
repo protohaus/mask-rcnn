@@ -248,7 +248,7 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
             key = 'healthy'
             if category == 2:
                 key = 'withered'
-            overlay_image(bg_image,random_transformation(leaf_images[key][random.randint(0,len(leaf_images)-1)]),mask_image,
+            overlay_image(bg_image,random_transformation(leaf_images[key][random.randint(0,len(leaf_images[key])-1)]),mask_image,
                                 random.randint(0,bg_image.shape[0]),random.randint(0,bg_image.shape[1]),colors,category)
         now = datetime.now()
     

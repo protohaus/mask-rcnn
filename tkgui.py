@@ -125,7 +125,9 @@ class PageLeafTinder(tk.Frame):
         label = ttk.Label(self, text="Inspector: This is the leaf tinder page")
         #label.pack(side="top", fill="x", pady=label_pad)
         label.grid(row =0, column=1)
-        self.canvas = tk.Canvas(self, width = main_canvas_width-100, height = main_canvas_height-100, bg = 'gray')      
+        self.canvas_width = main_canvas_width-100
+        self.canvas_height = main_canvas_height-100
+        self.canvas = tk.Canvas(self, width = self.canvas_width, height = self.canvas_height, bg = 'gray')      
         #self.canvas.pack()
         self.canvas.grid(row =1, column=1)
         self.img_filename = "gui/leaf.png"
@@ -133,7 +135,7 @@ class PageLeafTinder(tk.Frame):
         self.maxsize = main_canvas_height - 100
         self.image = resize_image_height(self.image,self.maxsize)
         self.img = ImageTk.PhotoImage(self.image)   
-        self.image_container = self.canvas.create_image((main_canvas_width-100-self.image.size[0])/2,(main_canvas_height-100-self.image.size[1])/2, anchor=tk.NW,image=self.img)
+        self.image_container = self.canvas.create_image((self.canvas_width)/2,(self.canvas_height)/2, anchor=tk.CENTER,image=self.img)
         self.startButton = ttk.Button(self, text = "Start", command = lambda: self.start_tinder())
         self.startButton.grid(row=2, column = 0)
         self.lbl_descr = ttk.Label(self,text = "Leaf category: ")
@@ -208,8 +210,8 @@ class PageLeafTinder(tk.Frame):
         #image.thumbnail(maxsize, Image.ANTIALIAS)
         #image = resize_image_height(image,self.maxsize)
         self.img = ImageTk.PhotoImage(self.image)
-        self.canvas.itemconfig(self.image_container,image=self.img,anchor=tk.NW)
-        self.canvas.coords(self.image_container,(main_canvas_width-200-self.image.size[0])/2,(main_canvas_height-200-self.image.size[1])/2)
+        self.canvas.itemconfig(self.image_container,image=self.img,anchor=tk.CENTER)
+        self.canvas.coords(self.image_container,(self.canvas_width)/2,(self.canvas_height)/2)
         return
 
     def start_tinder(self):
@@ -263,6 +265,7 @@ class PageLeafTinder(tk.Frame):
             img = cv2.imread(os.path.join(folder,a['filename']),flags=cv2.IMREAD_ANYCOLOR)
             if img is None:
                 print("img is NoneType")
+                continue
             height, width, channels = img.shape
             #print(os.path.join(LEAF_FOLDER,image))
             #print(leaf_image.shape)
