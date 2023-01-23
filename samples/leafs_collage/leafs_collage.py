@@ -340,7 +340,7 @@ def train(model):
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
                 epochs=50,
-                layers='4+')
+                layers='3+')
 
 def color_splash(image, mask):
     """Apply color splash effect.
