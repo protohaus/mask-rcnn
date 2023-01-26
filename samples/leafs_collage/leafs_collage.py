@@ -224,7 +224,7 @@ class LeafsCollageDataset(utils.Dataset):
         # [height, width, instance_count]
         info = self.image_info[image_id]
         mask = np.zeros([info["height"], info["width"], len(info["polygons"])],
-                        dtype=np.bool)
+                        dtype=bool)
         classes = np.zeros([mask.shape[-1]], dtype=np.int32)
         for i, p in enumerate(info["polygons"]):
             # TODO: get class ID, 0: BG, 1: Leaf, 2: Withered
@@ -243,7 +243,7 @@ class LeafsCollageDataset(utils.Dataset):
 
         # Return mask, and array of class IDs of each instance. Since we have
         # one class ID only, we return an array of 1s
-        return mask.astype(np.bool), classes#np.ones([mask.shape[-1]], dtype=np.int32)
+        return mask.astype(bool), classes#np.ones([mask.shape[-1]], dtype=np.int32)
 
     def image_reference(self, image_id):
         """Return the path of the image."""
