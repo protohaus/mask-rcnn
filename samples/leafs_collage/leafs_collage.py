@@ -62,7 +62,7 @@ class LeafsCollageConfig(Config):
     # Give the configuration a recognizable name
     NAME = "leafsCollage"
 
-    BACKBONE = "resnet101"
+    BACKBONE = "resnet50"
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
@@ -119,11 +119,11 @@ class LeafsCollageConfig(Config):
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
     # weights to explode. Likely due to differences in optimizer
     # implementation.
-    LEARNING_RATE = 0.002
-    LEARNING_MOMENTUM = 0.9
+    #LEARNING_RATE = 0.002
+    #LEARNING_MOMENTUM = 0.9
 
     # Weight decay regularization
-    WEIGHT_DECAY = 0.00001
+    #WEIGHT_DECAY = 0.00001
 
     # Loss weights for more precise optimization.
     # Can be used for R-CNN training setup.
@@ -339,8 +339,8 @@ def train(model):
     print("Training network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=50,
-                layers='3+')
+                epochs=25,
+                layers='heads')
 
 def color_splash(image, mask):
     """Apply color splash effect.
