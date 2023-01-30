@@ -103,7 +103,7 @@ class LeafsCollageConfig(Config):
 
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more propsals.
-    RPN_NMS_THRESHOLD = 0.8
+    #RPN_NMS_THRESHOLD = 0.8
 
     # Maximum number of ground truth instances to use in one image
     MAX_GT_INSTANCES = 200
@@ -339,7 +339,7 @@ def train(model):
     print("Training network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=10,
+                epochs=30,
                 layers='heads')
 
 def color_splash(image, mask):
