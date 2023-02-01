@@ -34,6 +34,7 @@ import json
 import numpy as np
 import skimage.draw
 import tensorflow.keras as keras
+import imgaug
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
@@ -332,6 +333,10 @@ def train(model):
     dataset_val.load_leafs(args.dataset, "val")
     dataset_val.prepare()
 
+    # Image Augmentation
+    # Right/Left flip 50% of the time
+    augmentation = imgaug.augmenters.Fliplr(0.5)
+
     # *** This training schedule is an example. Update to your needs ***
     # Since we're using a very small dataset, and starting from
     # COCO trained weights, we don't need to train too long. Also,
@@ -340,7 +345,8 @@ def train(model):
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
                 epochs=30,
-                layers='heads')
+                layers='heads',
+                augmentation=augmentation)
 
 def color_splash(image, mask):
     """Apply color splash effect.
