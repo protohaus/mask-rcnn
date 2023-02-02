@@ -338,7 +338,7 @@ def train(model):
     augmentation = iaa.Sequential([iaa.Fliplr(0.5),
                                    iaa.Affine(rotate=(-180,180)),
                                    iaa.Crop(percent=(0, 0.2)),
-                                   iaa.AdditiveGaussianNoise(scale=(0, 60))], random_order=True)                                   )
+                                   iaa.AdditiveGaussianNoise(scale=(0, 60))], random_order=True)
 
     # *** This training schedule is an example. Update to your needs ***
     # Since we're using a very small dataset, and starting from
