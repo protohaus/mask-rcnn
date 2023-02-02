@@ -34,7 +34,7 @@ import json
 import numpy as np
 import skimage.draw
 import tensorflow.keras as keras
-import imgaug
+from imgaug import augmenters as iaa
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
@@ -335,7 +335,10 @@ def train(model):
 
     # Image Augmentation
     # Right/Left flip 50% of the time
-    augmentation = imgaug.augmenters.Fliplr(0.5)
+    augmentation = iaa.Sequential([iaa.Fliplr(0.5),
+                                   iaa.Affine(rotate=(-180,180)),
+                                   iaa.Crop(percent=(0, 0.2)),
+                                   iaa.AdditiveGaussianNoise(scale=(0, 60))], random_order=True)                                   )
 
     # *** This training schedule is an example. Update to your needs ***
     # Since we're using a very small dataset, and starting from
