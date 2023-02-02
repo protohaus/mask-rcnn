@@ -63,7 +63,7 @@ class LeafsCollageConfig(Config):
     # Give the configuration a recognizable name
     NAME = "leafsCollage"
 
-    BACKBONE = "resnet50"
+    BACKBONE = "resnet101"
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
@@ -121,7 +121,7 @@ class LeafsCollageConfig(Config):
     # weights to explode. Likely due to differences in optimizer
     # implementation.
     LEARNING_RATE = 0.001
-    #LEARNING_MOMENTUM = 0.9
+    LEARNING_MOMENTUM = 0.9
 
     # Weight decay regularization
     #WEIGHT_DECAY = 0.00001
