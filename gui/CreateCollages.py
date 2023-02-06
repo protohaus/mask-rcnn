@@ -197,11 +197,18 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
     bg_images = []
     mask_images = []
     scale_percent = 35 # percent of original size
+    scale_percent_leafs = 66
 
     for image in os.listdir(healthy_path):
         if image.lower().endswith('.png'):
             leaf_image = cv2.imread(os.path.join(healthy_path,image),flags=cv2.IMREAD_UNCHANGED)
-            leaf_images['healthy'].append(leaf_image)# and class
+            new_width = int(leaf_image.shape[1] * scale_percent_leafs / 100)
+            new_height = int(leaf_image.shape[0] * scale_percent_leafs / 100)
+            dim = (new_width, new_height)
+
+            # resize image
+            resized = cv2.resize(leaf_image, dim, interpolation = cv2.INTER_NEAREST)
+            leaf_images['healthy'].append(resized)# and class
         else:
             print("Found non-png type in folder.")
     if len(leaf_images['healthy']) == 0:
@@ -211,7 +218,13 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
     for image in os.listdir(withered_path):
         if image.lower().endswith('.png'):
             leaf_image = cv2.imread(os.path.join(withered_path,image),flags=cv2.IMREAD_UNCHANGED)
-            leaf_images['withered'].append(leaf_image)# and class
+            new_width = int(leaf_image.shape[1] * scale_percent_leafs / 100)
+            new_height = int(leaf_image.shape[0] * scale_percent_leafs / 100)
+            dim = (new_width, new_height)
+
+            # resize image
+            resized = cv2.resize(leaf_image, dim, interpolation = cv2.INTER_NEAREST)
+            leaf_images['withered'].append(resized)# and class
         else:
             print("Found non-png type in folder.")
     if len(leaf_images['healthy']) == 0:
@@ -226,7 +239,7 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
             dim = (new_width, new_height)
 
             # resize image
-            resized = cv2.resize(bg_image, dim, interpolation = cv2.INTER_AREA)
+            resized = cv2.resize(bg_image, dim, interpolation = cv2.INTER_NEAREST)
             bg_images.append(resized)
         else:
             print("Found non-jpg type in folder.")
@@ -235,6 +248,7 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
         return
 
     annotations = {}
+    cluster = True
     for i in range(N):
         bg_index = random.randint(0,len(bg_images)-1)
         bg_image = np.copy(bg_images[bg_index])
@@ -242,14 +256,32 @@ def create_collages(LEAF_FOLDER,BG_FOLDER,OUTPUT_FOLDER, N):
         regions = []
         colors = np.array([[0,0,0]])
         #colors = np.array([0])
+        cluster_scale = int(bg_image.shape[0]/3)
+        if cluster:
+            x_cluster = random.randint(cluster_scale,bg_image.shape[0]-cluster_scale)
+            y_cluster = random.randint(cluster_scale,bg_image.shape[1]-cluster_scale)
 
-        for j in range(random.randint(25,150)):
+        for j in range(random.randint(25,100)):
             category = random.randint(1,2)
             key = 'healthy'
             if category == 2:
                 key = 'withered'
+            if cluster:
+                x_c = x_cluster + random.randint(-cluster_scale,cluster_scale)
+                y_c = y_cluster + random.randint(-cluster_scale,cluster_scale)
+                if x_c > bg_image.shape[0]:
+                    x_c = bg_image.shape[0]
+                if x_c < 0:
+                    x_c = 0
+                if y_c > bg_image.shape[1]:
+                    y_c = bg_image.shape[1]
+                if y_c < 0:
+                    x_c = 0
+            else:
+                x_c = random.randint(0,bg_image.shape[0])
+                y_c = random.randint(0,bg_image.shape[1])
             overlay_image(bg_image,random_transformation(leaf_images[key][random.randint(0,len(leaf_images[key])-1)]),mask_image,
-                                random.randint(0,bg_image.shape[0]),random.randint(0,bg_image.shape[1]),colors,category)
+                                x_c,y_c,colors,category)
         now = datetime.now()
     
         # dd/mm/YY H:M:S
