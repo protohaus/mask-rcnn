@@ -336,9 +336,21 @@ def train(model):
     # Image Augmentation
     # Right/Left flip 50% of the time
     augmentation = iaa.Sometimes(.667, iaa.Sequential([iaa.Fliplr(0.5),
-                                   iaa.Affine(rotate=(-180,180)),
+                                   iaa.Affine(scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+                                    translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+                                    rotate=(-180, 180),
+                                    shear=(-8, 8)),
                                    iaa.Crop(percent=(0, 0.2)),
-                                   iaa.AdditiveGaussianNoise(scale=(0, 60))
+                                   iaa.Sometimes(
+                                        0.5,
+                                        iaa.GaussianBlur(sigma=(0, 0.5))
+                                    ),
+                                   iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
+                                   iaa.LinearContrast((0.75, 1.5)),
+                                    # Make some images brighter and some darker.
+                                    # In 20% of all cases, we sample the multiplier once per channel,
+                                    # which can end up changing the color of the images.
+                                    iaa.Multiply((0.6, 1.2), per_channel=0.2),
                                    ], 
                                    random_order=True
                                    ))
