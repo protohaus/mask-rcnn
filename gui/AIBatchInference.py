@@ -212,6 +212,10 @@ def batch_validation(MODEL_DIR,LEAFS_MODEL_PATH,TESTSET_INPUT_DIR,results):
     batch = AIBatchInference(MODEL_DIR,LEAFS_MODEL_PATH,os.path.join(TESTSET_INPUT_DIR,"val"))
     batch.prepare_inference()
     batch.do_inference()
+    results["mAP"] = []
+    results["precisions"] = []
+    results["recalls"] = []
+    results["overlaps"] = []
     batch.validate(TESTSET_INPUT_DIR,results)
 
 def show_activation(MODEL_DIR,LEAFS_MODEL_PATH,BATCH_INPUT_DIR,layer):
