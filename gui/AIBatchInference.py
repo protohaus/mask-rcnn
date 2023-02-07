@@ -172,7 +172,7 @@ class AIBatchInference():
         # image_id is filename
         for name in self.filenames:
             img, image_meta, gt_class_ids, gt_boxes, gt_masks = modellib.load_image_gt(dataset_test, self.config, dataset_test.image_from_source_map["leafs." + name])
-        scaled_masks = np.zeros([1024, 1024, self.results[27][0]['masks'].shape[2]],
+        scaled_masks = np.zeros([1024, 1024, self.results[len(self.results)][0]['masks'].shape[2]],
                 dtype=np.bool)
         img, window, scale, padding, crop = utils.resize_image(self.images[0],max_dim = 1024)
         for i in range(self.results[27][0]['masks'].shape[2]):
