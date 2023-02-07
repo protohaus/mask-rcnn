@@ -428,7 +428,7 @@ class PageTest(tk.Frame):
 
     def test_wrapper(self):
         self.event = threading.Event()
-        self.new_window = NewWindow(master=None,window_title = "Validation",window_label="Started validating. This will might a long time. Please wait...",event = self.event)
+        self.new_window = NewWindow(master=None,window_title = "Validation",window_label="Started validating. This might take a long time. Please wait...",event = self.event)
         self.new_window.update()
         th = threading.Thread(target= self.validate)
         th.start()
@@ -437,7 +437,8 @@ class PageTest(tk.Frame):
     def validate(self):
         batch_validation(path_model.get(),path_aiweights.get(),path_testfolder.get(),self.results)
         print("Done validating")
-        self.axes.plot(self.results["precisions"],self.results["recalls"])
+        for i in range(len(self.results["precisions"])):
+            self.axes.plot(self.results["precisions"][i],self.results["recalls"][i])
         self.figure_canvas.draw()
 
 class PageInfoData(tk.Frame):
