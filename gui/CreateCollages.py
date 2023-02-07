@@ -107,8 +107,8 @@ def scale_random(img):
     # get the image shape
     height, width, dim = img.shape
     #transformation matrix for Scaling
-    scale_x = random.uniform(0.9,1.5)
-    scale_y = random.uniform(0.9,1.5)
+    scale_x = random.uniform(0.9,1.2)
+    scale_y = random.uniform(0.9,1.2)
     M = np.float32([[scale_x, 0  , 0],
             	[0,   scale_y, 0],
             	[0,   0,   1]])

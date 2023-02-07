@@ -124,7 +124,7 @@ class LeafsCollageConfig(Config):
     LEARNING_MOMENTUM = 0.9
 
     # Weight decay regularization
-    WEIGHT_DECAY = 0.0005
+    WEIGHT_DECAY = 0.001
 
     # Loss weights for more precise optimization.
     # Can be used for R-CNN training setup.
@@ -334,19 +334,15 @@ def train(model):
     dataset_val.prepare()
 
     # Image Augmentation
-    # Right/Left flip 50% of the time
-    augmentation = iaa.Sometimes(.667, iaa.Sequential([iaa.Fliplr(0.5),
-                                   iaa.Affine(scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
-                                    translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
-                                    rotate=(-180, 180),
-                                    shear=(-8, 8)),
-                                   iaa.Crop(percent=(0, 0.2)),
-                                   iaa.Sometimes(
-                                        0.5,
+    # Add augmentation and mask resizing.
+augmentation = iaa.Sometimes(0.667, 
+                             iaa.Sequential([#iaa.Crop(percent=(0, 0.2)),
+                                    iaa.Sometimes(
+                                        0.667,
                                         iaa.GaussianBlur(sigma=(0, 0.5))
                                     ),
-                                   iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
-                                   iaa.LinearContrast((0.75, 1.5)),
+                                    iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
+                                    iaa.LinearContrast((0.75, 1.5)),
                                     # Make some images brighter and some darker.
                                     # In 20% of all cases, we sample the multiplier once per channel,
                                     # which can end up changing the color of the images.

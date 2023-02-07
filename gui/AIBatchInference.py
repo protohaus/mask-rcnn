@@ -169,19 +169,22 @@ class AIBatchInference():
         dataset_test.load_leafs(TESTSET_INPUT_DIR, "val")
         dataset_test.prepare()
         dataset = dataset_test
+
         # image_id is filename
-        for name in self.filenames:
+        for i,name in enumerate(self.filenames):
             img, image_meta, gt_class_ids, gt_boxes, gt_masks = modellib.load_image_gt(dataset_test, self.config, dataset_test.image_from_source_map["leafs." + name])
-        scaled_masks = np.zeros([1024, 1024, self.results[len(self.results)][0]['masks'].shape[2]],
+            scaled_masks = np.zeros([1024, 1024, self.results[i][0]['masks'].shape[2]],
                 dtype=np.bool)
-        img, window, scale, padding, crop = utils.resize_image(self.images[0],max_dim = 1024)
-        for i in range(self.results[27][0]['masks'].shape[2]):
-            scaled_masks[:,:,i] = utils.resize_mask(self.results[27][0]['masks'][:,:,[i]],scale,padding)[:,:,0]
-        mAP, precisions, recalls, overlaps = utils.compute_ap(gt_boxes,gt_class_ids,gt_masks,self.results[27][0]['rois'],self.results[27][0]['class_ids'],self.results[27][0]['scores'],scaled_masks)
-        results["mAP"] = mAP
-        results["precisions"] = precisions
-        results["recalls"] = recalls
-        results["overlaps"] = overlaps
+            img, window, scale, padding, crop = utils.resize_image(self.images[i],max_dim = 1024)
+
+            for j in range(self.results[i][0]['masks'].shape[2]):
+                scaled_masks[:,:,j] = utils.resize_mask(self.results[i][0]['masks'][:,:,[j]],scale,padding)[:,:,0]
+            
+            mAP, precisions, recalls, overlaps = utils.compute_ap(gt_boxes,gt_class_ids,gt_masks,self.results[i][0]['rois'],self.results[i][0]['class_ids'],self.results[i][0]['scores'],scaled_masks)
+            results["mAP"].append(mAP)
+            results["precisions"].append(precisions)
+            results["recalls"].append(recalls)
+            results["overlaps"].append(overlaps)
         #return mAP, precisions, recalls, overlaps
 
     def activations(self,TEST_INPUT_FILE,layer):
