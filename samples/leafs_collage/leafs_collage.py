@@ -120,8 +120,8 @@ class LeafsCollageConfig(Config):
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
     # weights to explode. Likely due to differences in optimizer
     # implementation.
-    LEARNING_RATE = 0.0005
-    LEARNING_MOMENTUM = 0.9
+    LEARNING_RATE = 0.0001
+    LEARNING_MOMENTUM = 0.5
 
     # Weight decay regularization
     WEIGHT_DECAY = 0.001
@@ -358,7 +358,7 @@ def train(model):
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
                 epochs=30,
-                layers='heads',
+                layers='5+',
                 augmentation=augmentation)
 
 def color_splash(image, mask):
