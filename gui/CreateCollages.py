@@ -161,6 +161,22 @@ def overlay_image(img,img_overlay,img_mask,y_c,x_c,mask_colors,category):
                               alpha_mask_bg * img_mask[y1:y2, x1:x2,c])
 #%% create random image transformations
 def random_transformation(image):
+    #brighten/darken channels
+    brighten = np.random.randint(-100,100,dtype=np.int8)
+    #imageGreyScale += 50
+    transformed = image[:,:,:3]
+    if brighten > 0:
+        brighten = min([brighten,255-np.max(transformed)])
+        #transformed[image[:,:,:3] > 255 - brighten] = 255
+    else:
+        brighten = max([brighten,0 - np.min(transformed)])
+        #transformed[image[:,:,:3] <= 0 - brighten] = 0
+
+    np.add(transformed, brighten, out=transformed, casting="unsafe")
+
+    image[:,:,:3] = transformed
+
+    #image = np.clip(image,0,255)
     rotated = rotate_image(image,random.uniform(-180.0,180.0))
     if random.randint(0,1) == 1:
         flipped = flip_horizontal(rotated)
