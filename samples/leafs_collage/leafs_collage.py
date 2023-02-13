@@ -124,7 +124,7 @@ class LeafsCollageConfig(Config):
     LEARNING_MOMENTUM = 0.5
 
     # Weight decay regularization
-    WEIGHT_DECAY = 0.005
+    WEIGHT_DECAY = 0.01
 
     # Loss weights for more precise optimization.
     # Can be used for R-CNN training setup.
