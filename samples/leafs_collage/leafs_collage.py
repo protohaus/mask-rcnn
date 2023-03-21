@@ -122,7 +122,7 @@ class LeafsCollageConfig(Config):
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
     # weights to explode. Likely due to differences in optimizer
     # implementation.
-    LEARNING_RATE = 0.005
+    LEARNING_RATE = 0.002
     LEARNING_MOMENTUM = 0.0# 0.5
 
     # Weight decay regularization
