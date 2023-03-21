@@ -10,6 +10,7 @@ import threading
 import skimage
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import statistics
 
 # determine if application is a script file or frozen exe
 if getattr(sys, 'frozen', False):
@@ -420,11 +421,16 @@ class PageTest(tk.Frame):
         #self.img = ImageTk.PhotoImage(self.image)   
         #self.image_container = self.canvas.create_image((main_canvas_width-self.image.size[0])/2,(main_canvas_height-self.image.size[1])/2, anchor=tk.NW,image=self.img)
         self.figure = plt.Figure(figsize=(6, 4), dpi=100)
-        self.figure_canvas = FigureCanvasTkAgg(self.figure, self)
-        self.axes = self.figure.add_subplot()
-        self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        #self.figure_canvas = FigureCanvasTkAgg(self.figure, self)
+        #self.axes = self.figure.add_subplot()
+        #self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         btn_loadIMage = ttk.Button(master=self,text="Validate Testset",command=lambda: self.test_wrapper())
         btn_loadIMage.pack()
+        self.lbl_recalls = ttk.Label(self, text="Average Recalls: ")
+        self.lbl_recalls.pack()
+        self.lbl_precision = ttk.Label(self, text="Average Precisions: ")
+        self.lbl_precision.pack()
 
     def test_wrapper(self):
         self.event = threading.Event()
@@ -437,8 +443,16 @@ class PageTest(tk.Frame):
     def validate(self):
         batch_validation(path_model.get(),path_aiweights.get(),path_testfolder.get(),self.results)
         print("Done validating")
+<<<<<<< Updated upstream
         self.axes.plot(self.results["precisions"],self.results["recalls"])
         self.figure_canvas.draw()
+=======
+        self.lbl_recalls.configure(text = "Average Recalls: " + str(statistics.mean(self.results["recalls"])))
+        self.lbl_precision.configure(text = "Average Precision: " + str(statistics.mean(self.results["precisions"])))
+        #for i in range(len(self.results["precisions"])):
+        #    self.axes.plot(self.results["precisions"][i],self.results["recalls"][i])
+        #self.figure_canvas.draw()
+>>>>>>> Stashed changes
 
 class PageInfoData(tk.Frame):
     def __init__(self, parent):
