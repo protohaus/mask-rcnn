@@ -27,10 +27,10 @@ the ai generated json. Now the polygons can be tweaked. \n \
 Alternatively you can directly segment the data \n \
 manually."
 
-leaf_tinder_text = "In this section the best leafs from  the \n \
+leaf_organizer_text = "In this section the best leafs from  the \n \
 previous segmentation step are selected. \n \
 Choose a folder to output the resulting leafs, \n \
-then hit Start Leaf Tinder. \n \
+then hit Start Leaf Organizer. \n \
 This will take some time, because all images and masks\n \
 are loaded. \n \
 Each leaf from the dataset will be presented with \n \

@@ -119,10 +119,10 @@ class PageLeafs(tk.Frame):
         btn_loadIMage = ttk.Button(master=self,text="Show random image",command=lambda: load_image(self,main_canvas_height,main_canvas_width,path_leafoutput,False))
         btn_loadIMage.pack()
 
-class PageLeafTinder(tk.Frame):
+class PageLeafOrganizer(tk.Frame):
     def __init__(self, parent):
         ttk.Frame.__init__(self, parent)
-        label = ttk.Label(self, text="Inspector: This is the leaf tinder page")
+        label = ttk.Label(self, text="Inspector: This is the leaf Organizer page")
         #label.pack(side="top", fill="x", pady=label_pad)
         label.grid(row =0, column=1)
         self.canvas_width = main_canvas_width-100
@@ -136,7 +136,7 @@ class PageLeafTinder(tk.Frame):
         self.image = resize_image_height(self.image,self.maxsize)
         self.img = ImageTk.PhotoImage(self.image)   
         self.image_container = self.canvas.create_image((self.canvas_width)/2,(self.canvas_height)/2, anchor=tk.CENTER,image=self.img)
-        self.startButton = ttk.Button(self, text = "Start", command = lambda: self.start_tinder())
+        self.startButton = ttk.Button(self, text = "Start", command = lambda: self.start_organizer())
         self.startButton.grid(row=2, column = 0)
         self.lbl_descr = ttk.Label(self,text = "Leaf category: ")
         self.lbl_descr.grid(row=2, column=1)
@@ -214,7 +214,7 @@ class PageLeafTinder(tk.Frame):
         self.canvas.coords(self.image_container,(self.canvas_width)/2,(self.canvas_height)/2)
         return
 
-    def start_tinder(self):
+    def start_organizer(self):
         # Check if everything is allright
         self.index = -1
         self.leafs = []
@@ -465,12 +465,12 @@ class PageInfoSegmentation(tk.Frame):
         self.label_info = ttk.Label(self, text=segmentation_text)
         self.label_info.pack(side="top", fill="x", pady=label_pad)
 
-class PageInfoLeafTinder(tk.Frame):
+class PageInfoLeafOrganizer(tk.Frame):
     def __init__(self, parent):
         ttk.Frame.__init__(self, parent)
-        self.label = ttk.Label(self, text="Inspector: This is the leaf tinder info page")
+        self.label = ttk.Label(self, text="Inspector: This is the leaf organizer info page")
         self.label.pack(side="top", fill="x", pady=label_pad)
-        self.label_info = ttk.Label(self, text=leaf_tinder_text)
+        self.label_info = ttk.Label(self, text=leaf_organizer_text)
         self.label_info.pack(side="top", fill="x", pady=label_pad)
 
 class PageInfoCollage(tk.Frame):
@@ -522,24 +522,24 @@ class PageMenuRawData(ttk.Frame):
         self.lbl_imagenumber.configure(text = str(count) + " images")
         self.lbl_imagenumber.after(1000, self.update_count)
 
-class PageMenuLeafTinder(ttk.Frame):
+class PageMenuLeafOrganizer(ttk.Frame):
     def __init__(self,parent):
-        self.frm_leaftinder= ttk.Frame(master=parent,relief=tk.RAISED,border=5)
-        self.frm_leaftinder.grid(row=3,column=0, padx=grid_pad, pady=grid_pad, sticky="nsew")
-        self.frm_leaftinder.columnconfigure(0,minsize=200)
-        self.frm_leaftinder.columnconfigure(1,minsize=40)
-        self.lbl_leaftinder = ttk.Label(master=self.frm_leaftinder,text="Leaf Tinder")
-        self.lbl_leaftinder.grid(row=0,column=0, sticky = "w")
-        self.ent_leaffolder = ttk.Entry(master=self.frm_leaftinder,textvariable=path_leafoutput)
+        self.frm_leaforganizer= ttk.Frame(master=parent,relief=tk.RAISED,border=5)
+        self.frm_leaforganizer.grid(row=3,column=0, padx=grid_pad, pady=grid_pad, sticky="nsew")
+        self.frm_leaforganizer.columnconfigure(0,minsize=200)
+        self.frm_leaforganizer.columnconfigure(1,minsize=40)
+        self.lbl_leaforganizer = ttk.Label(master=self.frm_leaforganizer,text="Leaf Organizer")
+        self.lbl_leaforganizer.grid(row=0,column=0, sticky = "w")
+        self.ent_leaffolder = ttk.Entry(master=self.frm_leaforganizer,textvariable=path_leafoutput)
         #ent_leaffolder.insert(-1,'C:/Outputfolder')
         self.ent_leaffolder.grid(row=1,column=0, sticky = "ew")
-        self.btn_chooseleaffolder = ttk.Button(master=self.frm_leaftinder,text="Browse",command=lambda: select_folder(path_leafoutput))
+        self.btn_chooseleaffolder = ttk.Button(master=self.frm_leaforganizer,text="Browse",command=lambda: select_folder(path_leafoutput))
         self.btn_chooseleaffolder.grid(row=1,column=1,sticky="e")
-        self.btn_starttinder = ttk.Button(master=self.frm_leaftinder,text="Start Leaf Tinder",command=lambda: [show_frame(frames,"PageLeafTinder"),show_frame(frames,"PageInfoLeafTinder")])
-        self.btn_starttinder.grid(row=1,column=2,sticky="w")
-        self.btn_showleafs = ttk.Button(master=self.frm_leaftinder,text="Show Leafs",command=lambda: [show_frame(frames,"PageLeafs"),show_frame(frames,"PageInfoLeafTinder")])
+        self.btn_startorganizer = ttk.Button(master=self.frm_leaforganizer,text="Start Leaf Organizer",command=lambda: [show_frame(frames,"PageLeafOrganizer"),show_frame(frames,"PageInfoLeafOrganizer")])
+        self.btn_startorganizer.grid(row=1,column=2,sticky="w")
+        self.btn_showleafs = ttk.Button(master=self.frm_leaforganizer,text="Show Leafs",command=lambda: [show_frame(frames,"PageLeafs"),show_frame(frames,"PageInfoLeafOrganizer")])
         self.btn_showleafs.grid(row=3,column=0,sticky="e")
-        self.lbl_imagenumber = ttk.Label(master=self.frm_leaftinder,text="0 images")
+        self.lbl_imagenumber = ttk.Label(master=self.frm_leaforganizer,text="0 images")
         self.lbl_imagenumber.grid(row=2,column=0,sticky = "w")
         self.update_count()
 
@@ -709,7 +709,7 @@ btn_choosejson.grid(row=3,column=2,sticky="e")
 btn_showsegmentation = ttk.Button(master=frm_segmentation,text="Show Segmentation",command=lambda: [show_frame(frames,"PageSegmentation"),show_frame(frames,"PageInfoSegmentation")])
 btn_showsegmentation.grid(row=4,column=0,sticky="e")
 
-leaftinderpage = PageMenuLeafTinder(frm_menu)
+leaforganizerpage = PageMenuLeafOrganizer(frm_menu)
 
 collages_page = PageMenuCollages(frm_menu)
 
@@ -791,7 +791,7 @@ img =  ImageTk.PhotoImage(Image.open("gui/ofai.png"))
 canvas_logo.create_image(0,0, anchor=tk.NW,image=img)   
 
 frames = {}
-for F in (PageData, PageWeights, PageSegmentation, PageLeafTinder,PageLeafs, PageCollage,
+for F in (PageData, PageWeights, PageSegmentation, PageLeafOrganizer,PageLeafs, PageCollage,
             PageBackgrounds, PageTrain, PageTest):
     page_name = F.__name__
     frame = F(parent=frm_inspector)
@@ -802,7 +802,7 @@ for F in (PageData, PageWeights, PageSegmentation, PageLeafTinder,PageLeafs, Pag
     # will be the one that is visible.
     frame.grid(row=0, column=0, sticky="nsew")
 
-for F in (PageInfoData, PageInfoWeights, PageInfoSegmentation, PageInfoLeafTinder, PageInfoCollage, 
+for F in (PageInfoData, PageInfoWeights, PageInfoSegmentation, PageInfoLeafOrganizer, PageInfoCollage, 
         PageInfoTrain, PageInfoTest):
     page_name = F.__name__
     frame = F(parent=frm_info)
